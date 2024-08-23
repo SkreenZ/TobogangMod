@@ -1,0 +1,1 @@
+copy .\bin\Debug\netstandard2.1\*.dll "C:\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins"
