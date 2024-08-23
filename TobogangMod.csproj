@@ -65,6 +65,12 @@
       <Reference Include="UnityEngine">
         <HintPath>lib\UnityEngine.dll</HintPath>
       </Reference>
+      <Reference Include="LC_SoundTool">
+        <HintPath>lib\LC_SoundTool.dll</HintPath>
+      </Reference>
+      <Reference Include="LethalLib">
+        <HintPath>lib\LethalLib.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
     <ItemGroup>

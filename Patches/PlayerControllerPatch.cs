@@ -5,7 +5,7 @@ using UnityEngine;
 namespace TobogangMod.Patches
 {
     [HarmonyPatch(typeof(PlayerControllerB))]
-    public class KillOnExhaustedPatch
+    public class PlayerControllerPatch
     {
         [HarmonyPatch(nameof(PlayerControllerB.Update))]
         [HarmonyPostfix]
@@ -13,7 +13,7 @@ namespace TobogangMod.Patches
         {
             if (__instance.isExhausted)
             {
-                __instance.KillPlayer(Vector3.zero);
+                //__instance.KillPlayer(Vector3.zero);
             }
         }
     }

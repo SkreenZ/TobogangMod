@@ -5,6 +5,8 @@ using HarmonyLib;
 using UnityEngine;
 using LobbyCompatibility.Attributes;
 using LobbyCompatibility.Enums;
+using LethalLib;
+using LethalLib.Modules;
 
 namespace TobogangMod;
 
@@ -14,7 +16,7 @@ namespace TobogangMod;
 public class TobogangMod : BaseUnityPlugin
 {
     public static TobogangMod Instance { get; private set; } = null!;
-    internal new static ManualLogSource Logger { get; private set; } = null!;
+    public new static ManualLogSource Logger { get; private set; } = null!;
     internal static Harmony? Harmony { get; set; }
 
     private void Awake()
@@ -24,7 +26,7 @@ public class TobogangMod : BaseUnityPlugin
 
         Patch();
 
-        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded!");
+        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded !");
     }
 
     internal static void Patch()
