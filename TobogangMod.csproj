@@ -71,6 +71,9 @@
       <Reference Include="LethalLib">
         <HintPath>lib\LethalLib.dll</HintPath>
       </Reference>
+      <Reference Include="Unity.Netcode.Runtime">
+        <HintPath>lib\Unity.Netcode.Runtime.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
     <ItemGroup>
@@ -89,6 +92,7 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="netcode-patch &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')" />
       <Exec Command="call postbuild.bat" />
     </Target>
 </Project>

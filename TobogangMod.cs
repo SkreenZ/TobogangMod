@@ -7,6 +7,9 @@ using LobbyCompatibility.Attributes;
 using LobbyCompatibility.Enums;
 using LethalLib;
 using LethalLib.Modules;
+using TobogangMod.Scripts;
+using Unity.Netcode;
+using System.Reflection;
 
 namespace TobogangMod;
 
@@ -18,9 +21,16 @@ public class TobogangMod : BaseUnityPlugin
     public static TobogangMod Instance { get; private set; } = null!;
     public new static ManualLogSource Logger { get; private set; } = null!;
     internal static Harmony? Harmony { get; set; }
+    public static AssetBundle MainAssetBundle { get; private set; } = null!;
 
     private void Awake()
     {
+        var dllFolderPath = System.IO.Path.GetDirectoryName(Info.Location);
+        var assetBundleFilePath = System.IO.Path.Combine(dllFolderPath, "TobogangAsset");
+        MainAssetBundle = AssetBundle.LoadFromFile(assetBundleFilePath);
+
+        NetcodePatcher();
+
         Logger = base.Logger;
         Instance = this;
 
@@ -47,5 +57,22 @@ public class TobogangMod : BaseUnityPlugin
         Harmony?.UnpatchSelf();
 
         Logger.LogDebug("Finished unpatching!");
+    }
+
+    private static void NetcodePatcher()
+    {
+        var types = Assembly.GetExecutingAssembly().GetTypes();
+        foreach (var type in types)
+        {
+            var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            foreach (var method in methods)
+            {
+                var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
+                if (attributes.Length > 0)
+                {
+                    method.Invoke(null, null);
+                }
+            }
+        }
     }
 }

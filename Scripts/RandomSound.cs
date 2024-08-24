@@ -1,14 +1,10 @@
-﻿using LCSoundTool;
-using LethalLib.Modules;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Unity.Mathematics;
+﻿using System;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace TobogangMod.Scripts
 {
-    public class RandomSound : MonoBehaviour
+    public class RandomSound : NetworkBehaviour
     {
         public EnemyAI enemy;
 
@@ -17,27 +13,23 @@ namespace TobogangMod.Scripts
 
         private float timeSinceLastSound = 0f;
 
-        private AudioSource audioSource = null;
 
         private void Start()
         {
+            TobogangMod.Logger.LogInfo("New RandomSound spawned");
+
             if (enemy == null)
             {
                 return;
             }
-
-            audioSource = enemy.gameObject.AddComponent<AudioSource>();
-            audioSource.clip = SoundTool.GetAudioClip("TobogangMod", "bruh.mp3");
-            audioSource.loop = false;
-            audioSource.minDistance = 5f;
-            audioSource.maxDistance = 50f;
-            audioSource.spatialBlend = 1.0f;
         }
 
 
         private void Update()
         {
-            if (enemy == null)
+            bool isServer = NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer;
+
+            if (!isServer || enemy == null)
             {
                 return;
             }
@@ -52,10 +44,47 @@ namespace TobogangMod.Scripts
             {
                 timeSinceLastSound = 0f;
 
-                audioSource.Play();
+                var e = new Model.RandomSoundEvent
+                {
+                    Name = "bruh.mp3",
+                    EnemyID = enemy.gameObject.GetComponent<NetworkObject>().NetworkObjectId
+                };
+                NetworkHandler.Instance.EventClientRpc(e);
 
                 TobogangMod.Logger.LogInfo(enemy.name + " has spawned a sound");
             }
+        }
+
+        public static void PlaySoundForEnemy(string soundName, ulong enemyID)
+        {
+            GameObject enemy = RetrieveGameObject(enemyID);
+
+            if (enemy == null)
+            {
+                TobogangMod.Logger.LogError("Failed to find ennemy " + enemyID + " to play random sound " + soundName);
+                return;
+            }
+
+            AudioSourcePlayer audioSourcePlayer = enemy.GetComponent<AudioSourcePlayer>();
+
+            if (audioSourcePlayer == null)
+            {
+                TobogangMod.Logger.LogError("Enemy didn't have an AudioSourcePlayer");
+                return;
+            }
+
+            audioSourcePlayer.Play(soundName);
+        }
+
+        static GameObject RetrieveGameObject(ulong networkObjectId)
+        {
+            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject netObj))
+            {
+                return netObj.gameObject;
+            }
+
+            Debug.LogError("Could not find GameObject with NetworkObjectId: " + networkObjectId);
+            return null;
         }
     }
 }
