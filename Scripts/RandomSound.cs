@@ -12,16 +12,18 @@ namespace TobogangMod.Scripts
     {
         public EnemyAI enemy;
 
-        public float probabilityIncreasePerSecond = 0.01f;
-
         public static List<string> Sounds = null!;
 
+        public float MinTimeBetweenSounds = 30f;
 
-        private float timeSinceLastSound = 0f;
+        public float MaxTimeBetweenSounds = 300f;
+
+
+        private float timeUntilNextSound = -1f;
 
         private void Start()
         {
-            TobogangMod.Logger.LogInfo("New RandomSound spawned");
+            TobogangMod.Logger.LogDebug("New RandomSound spawned");
 
             if (Sounds == null)
             {
@@ -32,6 +34,15 @@ namespace TobogangMod.Scripts
                     Sounds.Add(Path.GetFileName(file));
                 }
             }
+
+            // 1% chance to be crazy
+            if (UnityEngine.Random.Range(0f, 1f) <= 0.01f && (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
+            {
+                MinTimeBetweenSounds = 1f;
+                MaxTimeBetweenSounds = 5f;
+            }
+
+            timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
         }
 
 
@@ -44,15 +55,11 @@ namespace TobogangMod.Scripts
                 return;
             }
 
-            float prevSecs = (float)Math.Floor(timeSinceLastSound);
-            timeSinceLastSound += Time.deltaTime;
-            float currSecs = (float)Math.Floor(timeSinceLastSound);
+            timeUntilNextSound -= Time.deltaTime;
 
-            float proba = currSecs * probabilityIncreasePerSecond;
-
-            if (currSecs > prevSecs && UnityEngine.Random.Range(0f, 1f) <= proba)
+            if (timeUntilNextSound <= 0f)
             {
-                timeSinceLastSound = 0f;
+                timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
 
                 var e = new Model.RandomSoundEvent
                 {
@@ -61,7 +68,7 @@ namespace TobogangMod.Scripts
                 };
                 NetworkHandler.Instance.EventClientRpc(e);
 
-                TobogangMod.Logger.LogInfo(enemy.name + " has spawned a sound");
+                TobogangMod.Logger.LogDebug(enemy.name + " has spawned a sound");
             }
         }
 
