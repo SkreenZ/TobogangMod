@@ -19,15 +19,15 @@ namespace TobogangMod.Scripts
             audioSource.spatialBlend = 1.0f;
         }
 
-        public void Play(string soundName)
+        public void Play(AudioClip audioClip)
         {
-            if (soundName == null)
+            if (audioClip == null)
             {
-                TobogangMod.Logger.LogError("Tried to play an AudioSourcePlayer with a null sound name");
+                TobogangMod.Logger.LogError("Tried to play an AudioSourcePlayer with a null AudioClip");
                 return;
             }
 
-            audioSource.PlayOneShot(SoundTool.GetAudioClip("TobogangMod", soundName));
+            audioSource.PlayOneShot(audioClip);
         }
     }
 }

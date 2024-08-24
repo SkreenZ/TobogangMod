@@ -1,4 +1,8 @@
-﻿using System;
+﻿using BepInEx;
+using LCSoundTool;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -10,17 +14,23 @@ namespace TobogangMod.Scripts
 
         public float probabilityIncreasePerSecond = 0.01f;
 
+        public static List<string> Sounds = null!;
+
 
         private float timeSinceLastSound = 0f;
-
 
         private void Start()
         {
             TobogangMod.Logger.LogInfo("New RandomSound spawned");
 
-            if (enemy == null)
+            if (Sounds == null)
             {
-                return;
+                Sounds = new();
+
+                foreach (var file in Directory.GetFiles(Path.Combine(Paths.PluginPath, "TobogangMod")))
+                {
+                    Sounds.Add(Path.GetFileName(file));
+                }
             }
         }
 
@@ -46,7 +56,7 @@ namespace TobogangMod.Scripts
 
                 var e = new Model.RandomSoundEvent
                 {
-                    Name = "bruh.mp3",
+                    SoundIndex = UnityEngine.Random.RandomRangeInt(0, Sounds.Count - 1),
                     EnemyID = enemy.gameObject.GetComponent<NetworkObject>().NetworkObjectId
                 };
                 NetworkHandler.Instance.EventClientRpc(e);
@@ -55,13 +65,13 @@ namespace TobogangMod.Scripts
             }
         }
 
-        public static void PlaySoundForEnemy(string soundName, ulong enemyID)
+        public static void PlaySoundForEnemy(int soundIndex, ulong enemyID)
         {
             GameObject enemy = RetrieveGameObject(enemyID);
 
             if (enemy == null)
             {
-                TobogangMod.Logger.LogError("Failed to find ennemy " + enemyID + " to play random sound " + soundName);
+                TobogangMod.Logger.LogError("Failed to find ennemy " + enemyID + " to play random sound " + soundIndex);
                 return;
             }
 
@@ -73,7 +83,13 @@ namespace TobogangMod.Scripts
                 return;
             }
 
-            audioSourcePlayer.Play(soundName);
+            if (Sounds == null || soundIndex >= Sounds.Count)
+            {
+                TobogangMod.Logger.LogError("Sounds not loaded or invalid sound provided");
+                return;
+            }
+
+            audioSourcePlayer.Play(SoundTool.GetAudioClip("TobogangMod", Sounds[soundIndex]));
         }
 
         static GameObject RetrieveGameObject(ulong networkObjectId)

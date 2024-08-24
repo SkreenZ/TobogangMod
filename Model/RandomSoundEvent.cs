@@ -6,15 +6,15 @@ namespace TobogangMod.Model
 {
     public class RandomSoundEvent : INetworkSerializable
     {
-        public String Name { get; set; }
+        public int SoundIndex { get; set; }
 
         public ulong EnemyID { get; set; }
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
-            string name = Name;
-            serializer.SerializeValue(ref name);
-            Name = name;
+            int soundIndex = SoundIndex;
+            serializer.SerializeValue(ref soundIndex);
+            SoundIndex = soundIndex;
 
             ulong enemyID = EnemyID;
             serializer.SerializeValue(ref enemyID);
@@ -23,7 +23,7 @@ namespace TobogangMod.Model
 
         public override string ToString()
         {
-            return Name + " at " + EnemyID;
+            return SoundIndex + " at " + EnemyID;
         }
     }
 }

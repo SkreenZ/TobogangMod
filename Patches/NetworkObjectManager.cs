@@ -46,7 +46,7 @@ namespace TobogangMod.Patches
         static void ReceivedEventFromServer(RandomSoundEvent e)
         {
             TobogangMod.Logger.LogInfo("Received event from server: " + e);
-            RandomSound.PlaySoundForEnemy(e.Name, e.EnemyID);
+            RandomSound.PlaySoundForEnemy(e.SoundIndex, e.EnemyID);
         }
 
         static void SendEventToClients(RandomSoundEvent e)
