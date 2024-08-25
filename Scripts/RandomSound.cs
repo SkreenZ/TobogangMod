@@ -10,7 +10,18 @@ namespace TobogangMod.Scripts
 {
     public class RandomSound : NetworkBehaviour
     {
-        public EnemyAI enemy;
+        private EnemyAI _enemy;
+        public EnemyAI Enemy
+        {
+            get
+            {
+                return _enemy;
+            }
+            set
+            {
+                AssignEnemyServerRpc(value.NetworkObjectId);
+            }
+        }
 
         public static List<string> Sounds = null!;
 
@@ -18,8 +29,16 @@ namespace TobogangMod.Scripts
 
         public float MaxTimeBetweenSounds = 300f;
 
+        public static GameObject NetworkPrefab = null!;
+
 
         private float timeUntilNextSound = -1f;
+
+        public static void Init()
+        {
+            NetworkPrefab = LethalLib.Modules.NetworkPrefabs.CloneNetworkPrefab(TobogangMod.NetworkPrefab);
+            NetworkPrefab.AddComponent<RandomSound>();
+        }
 
         private void Start()
         {
@@ -50,7 +69,7 @@ namespace TobogangMod.Scripts
         {
             bool isServer = NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer;
 
-            if (!isServer || enemy == null)
+            if (!isServer || Enemy == null)
             {
                 return;
             }
@@ -61,32 +80,47 @@ namespace TobogangMod.Scripts
             {
                 timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
 
-                var e = new Model.RandomSoundEvent
-                {
-                    SoundIndex = UnityEngine.Random.RandomRangeInt(0, Sounds.Count - 1),
-                    EnemyID = enemy.gameObject.GetComponent<NetworkObject>().NetworkObjectId
-                };
-                NetworkHandler.Instance.EventClientRpc(e);
+                int soundIndex = UnityEngine.Random.RandomRangeInt(0, Sounds.Count - 1);
 
-                TobogangMod.Logger.LogDebug(enemy.name + " has spawned a sound");
+                PlaySoundForEnemy(soundIndex);
+                PlaySoundClientRpc(soundIndex);
+
+                TobogangMod.Logger.LogInfo(Enemy.name + " has spawned a sound");
             }
         }
 
-        public static void PlaySoundForEnemy(int soundIndex, ulong enemyID)
+        [ServerRpc]
+        void AssignEnemyServerRpc(ulong enemyId)
         {
-            GameObject enemy = RetrieveGameObject(enemyID);
+            AssignEnemyClientRpc(enemyId);
+        }
 
-            if (enemy == null)
+        [ClientRpc]
+        void AssignEnemyClientRpc(ulong enemyId)
+        {
+            var networkObject = NetworkManager.Singleton.SpawnManager.SpawnedObjects[enemyId];
+            _enemy = networkObject.GetComponent<EnemyAI>();
+        }
+
+        [ClientRpc]
+        void PlaySoundClientRpc(int soundIndex)
+        {
+            PlaySoundForEnemy(soundIndex);
+        }
+
+        void PlaySoundForEnemy(int soundIndex)
+        {
+            if (Enemy == null)
             {
-                TobogangMod.Logger.LogError("Failed to find ennemy " + enemyID + " to play random sound " + soundIndex);
+                TobogangMod.Logger.LogError("Failed to find ennemy to play random sound " + soundIndex);
                 return;
             }
 
-            AudioSourcePlayer audioSourcePlayer = enemy.GetComponent<AudioSourcePlayer>();
+            AudioSourcePlayer audioSourcePlayer = Enemy.GetComponent<AudioSourcePlayer>();
 
             if (audioSourcePlayer == null)
             {
-                TobogangMod.Logger.LogError("Enemy didn't have an AudioSourcePlayer");
+                TobogangMod.Logger.LogError("Enemy didn't have an AudioSourcePlayer for enemy " + Enemy);
                 return;
             }
 
@@ -97,17 +131,6 @@ namespace TobogangMod.Scripts
             }
 
             audioSourcePlayer.Play(SoundTool.GetAudioClip("TobogangMod", Sounds[soundIndex]));
-        }
-
-        static GameObject RetrieveGameObject(ulong networkObjectId)
-        {
-            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject netObj))
-            {
-                return netObj.gameObject;
-            }
-
-            Debug.LogError("Could not find GameObject with NetworkObjectId: " + networkObjectId);
-            return null;
         }
     }
 }

@@ -20,8 +20,10 @@ namespace TobogangMod.Patches
 
             if (NetworkManager.Singleton.IsServer)
             {
-                RandomSound randomSound = __instance.gameObject.AddComponent<RandomSound>();
-                randomSound.enemy = __instance;
+                GameObject randomSoundObject = GameObject.Instantiate(RandomSound.NetworkPrefab, __instance.gameObject.transform);
+                randomSoundObject.GetComponent<NetworkObject>().Spawn();
+
+                randomSoundObject.GetComponent<RandomSound>().Enemy = __instance;
             }
         }
 

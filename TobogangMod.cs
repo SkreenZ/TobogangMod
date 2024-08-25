@@ -27,6 +27,8 @@ public class TobogangMod : BaseUnityPlugin
     internal static Harmony? Harmony { get; set; }
     public static AssetBundle MainAssetBundle { get; private set; } = null!;
 
+    public static GameObject NetworkPrefab { get; private set; } = null!;
+
     public static ContentLoader ContentLoader;
     public static Dictionary<string, GameObject> Prefabs = new Dictionary<string, GameObject>();
 
@@ -39,16 +41,24 @@ public class TobogangMod : BaseUnityPlugin
         var assetBundleFilePath = System.IO.Path.Combine(dllFolderPath, "tobogangasset");
         MainAssetBundle = AssetBundle.LoadFromFile(assetBundleFilePath);
 
+        NetworkPrefab = (GameObject)MainAssetBundle.LoadAsset("NetworkHandler");
+
         ContentLoader = new ContentLoader(Instance.Info, MainAssetBundle, (content, prefab) => {
             Prefabs.Add(content.ID, prefab);
         });
 
+        InitAll();
         CreateItems();
         Patch();
 
         NetcodePatcher();
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded !");
+    }
+
+    internal static void InitAll()
+    {
+        RandomSound.Init();
     }
 
     internal static void Patch()
