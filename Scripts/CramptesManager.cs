@@ -12,8 +12,8 @@ namespace TobogangMod.Scripts
 
         public PlayerControllerB CurrentCramptesPlayer { get; private set; } = null!;
 
-        private static readonly float CRAMPTES_CHANCE_ON_DAMAGE = 1f;// 0.05f;
-        private static readonly float PROBA_INCREASE = 0.01f; // 0.00001f; // Average 395s
+        private static readonly float CRAMPTES_CHANCE_ON_DAMAGE = 0.05f;
+        private static readonly float PROBA_INCREASE = 0.00001f; // Average 395s
 
         private float timeUntilIncrease = 1f;
         private float currentProba = PROBA_INCREASE;

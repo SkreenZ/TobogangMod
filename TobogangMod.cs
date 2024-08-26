@@ -38,7 +38,7 @@ public class TobogangMod : BaseUnityPlugin
         Logger = base.Logger;
 
         var dllFolderPath = System.IO.Path.GetDirectoryName(Info.Location);
-        var assetBundleFilePath = System.IO.Path.Combine(dllFolderPath, "tobogangasset");
+        var assetBundleFilePath = System.IO.Path.Combine(dllFolderPath, "TobogangMod/tobogangasset");
         MainAssetBundle = AssetBundle.LoadFromFile(assetBundleFilePath);
 
         NetworkPrefab = (GameObject)MainAssetBundle.LoadAsset("NetworkHandler");

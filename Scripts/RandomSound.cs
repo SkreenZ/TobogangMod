@@ -48,7 +48,7 @@ namespace TobogangMod.Scripts
             {
                 Sounds = new();
 
-                foreach (var file in Directory.GetFiles(Path.Combine(Paths.PluginPath, "TobogangMod")))
+                foreach (var file in Directory.GetFiles(Path.Combine(Paths.PluginPath, "TobogangMod/sounds")))
                 {
                     Sounds.Add(Path.GetFileName(file));
                 }
@@ -129,7 +129,7 @@ namespace TobogangMod.Scripts
                 return;
             }
 
-            audioSourcePlayer.Play(SoundTool.GetAudioClip("TobogangMod", Sounds[soundIndex]));
+            audioSourcePlayer.Play(SoundTool.GetAudioClip("TobogangMod/sounds", Sounds[soundIndex]));
         }
     }
 }
