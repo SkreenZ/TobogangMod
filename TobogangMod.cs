@@ -59,6 +59,7 @@ public class TobogangMod : BaseUnityPlugin
     internal static void InitAll()
     {
         RandomSound.Init();
+        CramptesManager.Init();
     }
 
     internal static void Patch()

@@ -36,7 +36,7 @@ namespace TobogangMod.Scripts
 
         public static void Init()
         {
-            NetworkPrefab = LethalLib.Modules.NetworkPrefabs.CloneNetworkPrefab(TobogangMod.NetworkPrefab);
+            NetworkPrefab = LethalLib.Modules.NetworkPrefabs.CloneNetworkPrefab(TobogangMod.NetworkPrefab, "RandomSound");
             NetworkPrefab.AddComponent<RandomSound>();
         }
 
@@ -82,7 +82,6 @@ namespace TobogangMod.Scripts
 
                 int soundIndex = UnityEngine.Random.RandomRangeInt(0, Sounds.Count - 1);
 
-                PlaySoundForEnemy(soundIndex);
                 PlaySoundClientRpc(soundIndex);
 
                 TobogangMod.Logger.LogInfo(Enemy.name + " has spawned a sound");
