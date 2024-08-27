@@ -8,14 +8,11 @@ namespace TobogangMod.Patches
     [HarmonyPatch(typeof(PlayerControllerB))]
     public class PlayerControllerPatch
     {
-        [HarmonyPatch(nameof(PlayerControllerB.Update))]
+        [HarmonyPatch(nameof(PlayerControllerB.Start))]
         [HarmonyPostfix]
-        private static void UpdatePostfix(PlayerControllerB __instance)
+        private static void StartPostfix(PlayerControllerB __instance)
         {
-            if (__instance.isExhausted)
-            {
-                //__instance.KillPlayer(Vector3.zero);
-            }
+            __instance.gameObject.AddComponent<AudioSourcePlayer>();
         }
 
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer))]
