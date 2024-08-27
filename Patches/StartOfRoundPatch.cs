@@ -16,6 +16,9 @@ namespace TobogangMod.Patches
             {
                 GameObject cramptesManager = GameObject.Instantiate(CramptesManager.NetworkPrefab, Vector3.zero, Quaternion.identity);
                 cramptesManager.GetComponent<NetworkObject>().Spawn();
+
+                GameObject coinguesManager = GameObject.Instantiate(CoinguesManager.NetworkPrefab, Vector3.zero, Quaternion.identity);
+                coinguesManager.GetComponent<NetworkObject>().Spawn();
             }
         }
     }

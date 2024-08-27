@@ -22,6 +22,11 @@ namespace TobogangMod;
 [LobbyCompatibility(CompatibilityLevel.ClientOnly, VersionStrictness.None)]
 public class TobogangMod : BaseUnityPlugin
 {
+    public class TobogangItems
+    {
+        public static readonly string Purge = "Purge";
+    }
+
     public static TobogangMod Instance { get; private set; } = null!;
     public new static ManualLogSource Logger { get; private set; } = null!;
     internal static Harmony? Harmony { get; set; }
@@ -60,6 +65,7 @@ public class TobogangMod : BaseUnityPlugin
     {
         RandomSound.Init();
         CramptesManager.Init();
+        CoinguesManager.Init();
     }
 
     internal static void Patch()
@@ -75,9 +81,11 @@ public class TobogangMod : BaseUnityPlugin
 
     void CreateItems()
     {
-        ContentLoader.Register(new ScrapItem("Cramptes", "Assets/CustomAssets/CramptesItem.asset", 1000, Levels.LevelTypes.All, null, (Item item) => {
-            CramptesItem script = item.spawnPrefab.AddComponent<CramptesItem>();
+        ContentLoader.Register(new ScrapItem(TobogangItems.Purge, "Assets/CustomAssets/TobogangPurge.asset", 0, Levels.LevelTypes.None, null, (Item item) => {
+            TobogangPurge script = item.spawnPrefab.AddComponent<TobogangPurge>();
             script.itemProperties = item;
+            script.grabbable = true;
+            script.itemProperties.canBeGrabbedBeforeGameStart = true;
         }));
 
         Logger.LogInfo("Registered items");
