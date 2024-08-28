@@ -12,7 +12,13 @@ namespace TobogangMod.Patches
         [HarmonyPostfix]
         private static void StartPostfix(PlayerControllerB __instance)
         {
+            TobogangMod.Logger.LogDebug($"Player steam id: {__instance.playerSteamId}");
             __instance.gameObject.AddComponent<AudioSourcePlayer>();
+        }
+
+        [HarmonyPatch(nameof(PlayerControllerB.Update)), HarmonyPostfix]
+        private static void UpdatePostfix(PlayerControllerB __instance)
+        {
         }
 
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer))]
