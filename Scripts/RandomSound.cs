@@ -1,6 +1,5 @@
 ﻿using BepInEx;
 using LCSoundTool;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using Unity.Netcode;
@@ -10,20 +9,7 @@ namespace TobogangMod.Scripts
 {
     public class RandomSound : NetworkBehaviour
     {
-        private EnemyAI _enemy;
-        public EnemyAI Enemy
-        {
-            get
-            {
-                return _enemy;
-            }
-            set
-            {
-                AssignEnemyServerRpc(value.NetworkObjectId);
-            }
-        }
-
-        public static List<string> Sounds = null!;
+        public static List<string> Sounds = [];
 
         public float MinTimeBetweenSounds = 30f;
 
@@ -32,22 +18,21 @@ namespace TobogangMod.Scripts
         public static GameObject NetworkPrefab = null!;
 
 
-        private float timeUntilNextSound = -1f;
+        private float _timeUntilNextSound = -1f;
 
         public static void Init()
         {
             NetworkPrefab = LethalLib.Modules.NetworkPrefabs.CloneNetworkPrefab(TobogangMod.NetworkPrefab, "RandomSound");
             NetworkPrefab.AddComponent<RandomSound>();
+            NetworkPrefab.AddComponent<AudioSourcePlayer>();
         }
 
         private void Start()
         {
             TobogangMod.Logger.LogDebug("New RandomSound spawned");
 
-            if (Sounds == null)
+            if (Sounds.Count == 0)
             {
-                Sounds = new();
-
                 foreach (var file in Directory.GetFiles(Path.Combine(Paths.PluginPath, "TobogangMod/sounds")))
                 {
                     Sounds.Add(Path.GetFileName(file));
@@ -61,7 +46,7 @@ namespace TobogangMod.Scripts
                 MaxTimeBetweenSounds = 5f;
             }
 
-            timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
+            _timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
         }
 
 
@@ -69,61 +54,40 @@ namespace TobogangMod.Scripts
         {
             bool isServer = NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer;
 
-            if (!isServer || Enemy == null)
+            if (!isServer)
             {
                 return;
             }
 
-            timeUntilNextSound -= Time.deltaTime;
+            _timeUntilNextSound -= Time.deltaTime;
 
-            if (timeUntilNextSound <= 0f)
+            if (_timeUntilNextSound <= 0f)
             {
-                timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
+                _timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
 
-                int soundIndex = UnityEngine.Random.RandomRangeInt(0, Sounds.Count - 1);
+                var soundIndex = UnityEngine.Random.RandomRangeInt(0, Sounds.Count - 1);
 
                 PlaySoundClientRpc(soundIndex);
-
-                TobogangMod.Logger.LogInfo(Enemy.name + " has spawned a sound");
             }
-        }
-
-        [ServerRpc]
-        void AssignEnemyServerRpc(ulong enemyId)
-        {
-            AssignEnemyClientRpc(enemyId);
-        }
-
-        [ClientRpc]
-        void AssignEnemyClientRpc(ulong enemyId)
-        {
-            var networkObject = NetworkManager.Singleton.SpawnManager.SpawnedObjects[enemyId];
-            _enemy = networkObject.GetComponent<EnemyAI>();
         }
 
         [ClientRpc]
         void PlaySoundClientRpc(int soundIndex)
         {
-            PlaySoundForEnemy(soundIndex);
+            PlaySound(soundIndex);
         }
 
-        void PlaySoundForEnemy(int soundIndex)
+        void PlaySound(int soundIndex)
         {
-            if (Enemy == null)
-            {
-                TobogangMod.Logger.LogError("Failed to find ennemy to play random sound " + soundIndex);
-                return;
-            }
-
-            AudioSourcePlayer audioSourcePlayer = Enemy.GetComponent<AudioSourcePlayer>();
+            AudioSourcePlayer audioSourcePlayer = gameObject.GetComponent<AudioSourcePlayer>();
 
             if (audioSourcePlayer == null)
             {
-                TobogangMod.Logger.LogError("Enemy didn't have an AudioSourcePlayer for enemy " + Enemy);
+                TobogangMod.Logger.LogError("Couldn't find an AudioSourcePlayer to play RandomSound");
                 return;
             }
 
-            if (Sounds == null || soundIndex >= Sounds.Count)
+            if (soundIndex >= Sounds.Count)
             {
                 TobogangMod.Logger.LogError("Sounds not loaded or invalid sound provided");
                 return;

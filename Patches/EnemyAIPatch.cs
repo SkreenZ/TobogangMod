@@ -16,14 +16,10 @@ namespace TobogangMod.Patches
         [HarmonyPostfix]
         private static void StartPostfix(EnemyAI __instance)
         {
-            __instance.gameObject.AddComponent<AudioSourcePlayer>();
-
             if (NetworkManager.Singleton.IsServer)
             {
                 GameObject randomSoundObject = GameObject.Instantiate(RandomSound.NetworkPrefab, __instance.gameObject.transform);
                 randomSoundObject.GetComponent<NetworkObject>().Spawn();
-
-                randomSoundObject.GetComponent<RandomSound>().Enemy = __instance;
             }
         }
 
