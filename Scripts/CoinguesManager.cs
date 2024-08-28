@@ -38,10 +38,26 @@ namespace TobogangMod.Scripts
 
         void Start()
         {
-            if (!IsServer)
+            if (IsServer)
             {
-                SyncAllClientsServerRpc();
+                var prefix = TobogangMod.Instance.Info.Metadata.Name + "_Coingues_";
+
+                foreach (var key in ES3.GetKeys(GameNetworkManager.Instance.currentSaveFileName))
+                {
+                    if (!key.StartsWith(prefix))
+                    {
+                        continue;
+                    }
+
+                    _coingues[key.Substring(prefix.Length)] = ES3.Load<int>(key, GameNetworkManager.Instance.currentSaveFileName, 0);
+                }
+
+                TobogangMod.Logger.LogDebug($"Loaded coingues from save: {_coingues}");
+
+                return;
             }
+
+            SyncAllClientsServerRpc();
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -93,14 +109,20 @@ namespace TobogangMod.Scripts
 
         public int GetCoingues(PlayerControllerB player)
         {
-            string id = GetPlayerId(player);
+            return GetCoingues(GetPlayerId(player));
+        }
 
-            if (!_coingues.ContainsKey(id))
-            {
-                return 0;
-            }
+        public int GetCoingues(string playerId)
+        {
+            return !_coingues.ContainsKey(playerId) ? 0 : _coingues[playerId];
+        }
 
-            return _coingues[id];
+        public string[] GetRegisteredPlayers()
+        {
+            var players = new string[_coingues.Keys.Count];
+            _coingues.Keys.CopyTo(players, 0);
+
+            return players;
         }
 
         [ServerRpc(RequireOwnership = false)]
