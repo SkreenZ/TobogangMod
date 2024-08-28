@@ -14,6 +14,15 @@ namespace TobogangMod.Patches
         {
             if (NetworkManager.Singleton.IsServer)
             {
+                foreach (var item in TobogangMod.ContentLoader.LoadedContent.Values)
+                {
+                    var scrap = item as LethalLib.Modules.ContentLoader.ScrapItem;
+                    if (scrap != null)
+                    {
+                        StartOfRound.Instance.allItemsList.itemsList.Add(scrap.Item);
+                    }
+                }
+
                 GameObject cramptesManager = GameObject.Instantiate(CramptesManager.NetworkPrefab, Vector3.zero, Quaternion.identity);
                 cramptesManager.GetComponent<NetworkObject>().Spawn();
 
