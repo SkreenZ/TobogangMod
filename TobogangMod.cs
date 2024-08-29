@@ -13,6 +13,7 @@ using System.Reflection;
 using static LethalLib.Modules.ContentLoader;
 using System.Collections.Generic;
 using LethalLib.Extras;
+using TobogangMod.Scripts.Items;
 
 namespace TobogangMod;
 
@@ -24,8 +25,8 @@ public class TobogangMod : BaseUnityPlugin
 {
     public class TobogangItems
     {
-        public static readonly string Purge = "Purge";
-        public static readonly string TaGueule = "TaGueule";
+        public static readonly string PURGE = "Purge";
+        public static readonly string TA_GUEULE = "TaGueule";
     }
 
     /* Instances */
@@ -59,6 +60,8 @@ public class TobogangMod : BaseUnityPlugin
 
         NetcodePatcher();
 
+        GeTobogangItems();
+
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded !");
     }
 
@@ -91,7 +94,7 @@ public class TobogangMod : BaseUnityPlugin
         }));
         */
 
-        ContentLoader.Register(new ScrapItem(TobogangItems.TaGueule, "Assets/CustomAssets/TobogangTaGueule.asset", 0, Levels.LevelTypes.None, null, item => {
+        ContentLoader.Register(new ScrapItem(TobogangItems.TA_GUEULE, "Assets/CustomAssets/TobogangTaGueule.asset", 0, Levels.LevelTypes.None, null, item => {
             var script = item.spawnPrefab.AddComponent<TobogangTaGueule>();
             script.itemProperties = item;
             script.grabbable = true;
@@ -101,6 +104,38 @@ public class TobogangMod : BaseUnityPlugin
         }));
 
         Logger.LogInfo("Registered items");
+    }
+
+    public static TobogangItem[] GeTobogangItems()
+    {
+        List<TobogangItem> outItems = [];
+
+        foreach (var prefab in Prefabs.Values)
+        {
+            var item = prefab.GetComponent<TobogangItem>();
+
+            if (item != null)
+            {
+                outItems.Add(item);
+            }
+        }
+
+        return outItems.ToArray();
+    }
+
+    public static TobogangItem? GeTobogangItem(string id)
+    {
+        foreach (var prefab in Prefabs.Values)
+        {
+            var item = prefab.GetComponent<TobogangItem>();
+
+            if (item != null && item.TobogangItemId == id)
+            {
+                return item;
+            }
+        }
+
+        return null;
     }
 
     internal static void Unpatch()
