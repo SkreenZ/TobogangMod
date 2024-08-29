@@ -12,8 +12,10 @@ namespace TobogangMod.Scripts
 {
     public class CoinguesManager : NetworkBehaviour
     {
-        public static CoinguesManager Instance { get; private set; }
+        public static readonly int DEATH_MALUS = 30;
+        public static readonly int CRAMPTES_PROC_MALUS = 100;
 
+        public static CoinguesManager Instance { get; private set; }
         public static GameObject NetworkPrefab { get; private set; }
 
         private CoinguesStorage _coingues = new();
@@ -158,7 +160,7 @@ namespace TobogangMod.Scripts
 
             var playerController = playerNetworkObject.gameObject.GetComponent<PlayerControllerB>();
 
-            _coingues[GetPlayerId(playerController)] = newCoingues;
+            _coingues[GetPlayerId(playerController)] = Math.Max(newCoingues, 0);
         }
     }
 }

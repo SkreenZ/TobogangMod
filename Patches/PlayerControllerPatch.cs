@@ -25,7 +25,14 @@ namespace TobogangMod.Patches
         private static void DamagePlayerPostfix(int damageNumber, bool hasDamageSFX, bool callRPC,
             CauseOfDeath causeOfDeath, int deathAnimation, bool fallDamage, Vector3 force, PlayerControllerB __instance)
         {
-            CramptesManager.Instance.TryGiveCramptesOnDamageServerRpc(__instance.NetworkObjectId);
+#if DEBUG
+            TobogangMod.Logger.LogDebug($"{__instance.playerUsername} took {damageNumber} damage from {causeOfDeath}");
+#endif
+
+            if (causeOfDeath != CauseOfDeath.Bludgeoning)
+            {
+                CramptesManager.Instance.TryGiveCramptesOnDamageServerRpc(__instance.NetworkObjectId);
+            }
         }
 
         [HarmonyPatch(nameof(PlayerControllerB.SetItemInElevator)), HarmonyPrefix]
@@ -41,6 +48,12 @@ namespace TobogangMod.Patches
             }
 
             return true;
+        }
+
+        [HarmonyPatch(nameof(PlayerControllerB.KillPlayer)), HarmonyPostfix]
+        private static void KillPlayerPostfix(CauseOfDeath causeOfDeath, PlayerControllerB __instance)
+        {
+            CoinguesManager.Instance.RemoveCoinguesServerRpc(__instance.NetworkObject, CoinguesManager.DEATH_MALUS);
         }
     }
 }

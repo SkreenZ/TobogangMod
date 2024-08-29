@@ -21,12 +21,14 @@ namespace TobogangMod.Patches
         private static readonly TerminalNode COINGUES_NODE = ScriptableObject.CreateInstance<TerminalNode>();
 #if DEBUG
         private static readonly TerminalNode MOTHERLODE_NODE = ScriptableObject.CreateInstance<TerminalNode>();
+        private static readonly TerminalNode DAMAGE_NODE = ScriptableObject.CreateInstance<TerminalNode>();
 #endif
 
         private static readonly Dictionary<TerminalNode, List<string>> customTerminalNodes = new Dictionary<TerminalNode, List<string>>()
         {
 #if DEBUG
             { MOTHERLODE_NODE, ["motherlode"] },
+            { DAMAGE_NODE, ["damage"] },
 #endif
             { COINGUES_NODE, ["coingues", "coingue", "coingu", "coing", "coin"] }
         };
@@ -80,6 +82,11 @@ namespace TobogangMod.Patches
             {
                 CoinguesManager.Instance.AddCoinguesServerRpc(player.NetworkObject, 100);
                 node.displayText = $"100 coingues obtenus";
+            }
+            else if (__result == DAMAGE_NODE)
+            {
+                player.DamagePlayer(1);
+                node.displayText = $"1 de dégat infligé";
             }
 #endif
             else

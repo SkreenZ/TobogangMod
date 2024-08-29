@@ -7,19 +7,22 @@ namespace TobogangMod.Scripts
 {
     internal class CramptesManager : NetworkBehaviour
     {
-        public static CramptesManager Instance { get; private set; }
+        public static CramptesManager Instance { get; private set; } = null!;
+        public static GameObject NetworkPrefab { get; private set; } = null!;
+        public PlayerControllerB? CurrentCramptesPlayer { get; private set; }
 
-        public static GameObject NetworkPrefab { get; private set; }
+#if DEBUG
+        private static readonly float CRAMPTES_CHANCE_ON_DAMAGE = 1f;
+        private static readonly float PROBA_INCREASE = 0.01f;
+#else
+        private static readonly float CRAMPTES_CHANCE_ON_DAMAGE = 0.05f;
+        private static readonly float PROBA_INCREASE = 0.00001f; // Average 395s
+#endif
 
-        public PlayerControllerB CurrentCramptesPlayer { get; private set; } = null!;
-
-        private static readonly float CRAMPTES_CHANCE_ON_DAMAGE = 1f; //0.05f;
-        private static readonly float PROBA_INCREASE = 0.01f; // 0.00001f; // Average 395s
-
-        private float timeUntilIncrease = 1f;
-        private float currentProba = PROBA_INCREASE;
-        private bool isProccing = false;
-        private float clipTimer = 0f;
+        private float _timeUntilIncrease = 1f;
+        private float _currentProba = PROBA_INCREASE;
+        private bool _isProccing = false;
+        private float _clipTimer = 0f;
 
         public static void Init()
         {
@@ -46,19 +49,19 @@ namespace TobogangMod.Scripts
                 return;
             }
 
-            if (isProccing)
+            if (_isProccing)
             {
                 if (CurrentCramptesPlayer == null)
                 {
-                    isProccing = false;
+                    _isProccing = false;
                     return;
                 }
 
-                clipTimer -= Time.deltaTime;
+                _clipTimer -= Time.deltaTime;
 
-                if (clipTimer <= 0f)
+                if (_clipTimer <= 0f)
                 {
-                    FinishProcClientRpc();
+                    FinishProc();
                 }
 
                 return;
@@ -69,22 +72,22 @@ namespace TobogangMod.Scripts
                 return;
             }
 
-            timeUntilIncrease -= Time.deltaTime;
+            _timeUntilIncrease -= Time.deltaTime;
 
-            if (timeUntilIncrease > 0f)
+            if (_timeUntilIncrease > 0f)
             {
                 return;
             }
 
-            timeUntilIncrease = 1f;
+            _timeUntilIncrease = 1f;
 
-            if (Random.Range(0f, 1f) <= currentProba)
+            if (Random.Range(0f, 1f) <= _currentProba)
             {
-                ProcClientRpc();
+                ProcClientRpc(Random.RandomRangeInt(0, RandomSound.Sounds.Count));
                 return;
             }
 
-            currentProba += PROBA_INCREASE;
+            _currentProba += PROBA_INCREASE;
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -107,7 +110,7 @@ namespace TobogangMod.Scripts
             string lastCramptesPlayer = CurrentCramptesPlayer != null ? CurrentCramptesPlayer.playerUsername : "";
 
             CurrentCramptesPlayer = playerNetId == 0 ? null : GetPlayer(playerNetId);
-            currentProba = PROBA_INCREASE;
+            _currentProba = PROBA_INCREASE;
 
             if (CurrentCramptesPlayer != null)
             {
@@ -115,7 +118,7 @@ namespace TobogangMod.Scripts
 
                 if (announce)
                 {
-                    HUDManager.Instance.DisplayGlobalNotification($"{CurrentCramptesPlayer.playerUsername} a choppé les cramptés");
+                    HUDManager.Instance.DisplayGlobalNotification($"{CurrentCramptesPlayer.playerUsername} a choppe les cramptes");
                 }
             }
             else if (lastCramptesPlayer != "")
@@ -124,31 +127,58 @@ namespace TobogangMod.Scripts
 
                 if (announce)
                 {
-                    HUDManager.Instance.DisplayGlobalNotification($"{lastCramptesPlayer} s'est débarassé des cramptés");
+                    HUDManager.Instance.DisplayGlobalNotification($"{lastCramptesPlayer} a perdu les cramptes");
                 }
             }
         }
 
         [ClientRpc]
-        void ProcClientRpc()
+        void ProcClientRpc(int soundIndex)
         {
             TobogangMod.Logger.LogDebug("Proc cramptés for " + CurrentCramptesPlayer.playerUsername);
 
-            isProccing = true;
+            _isProccing = true;
 
-            AudioClip clip = SoundTool.GetAudioClip("TobogangMod/sounds", RandomSound.Sounds[Random.RandomRangeInt(0, RandomSound.Sounds.Count - 1)]);
+            AudioClip clip = SoundTool.GetAudioClip("TobogangMod/sounds", RandomSound.Sounds[soundIndex]);
             CurrentCramptesPlayer.GetComponent<AudioSourcePlayer>().Play(clip);
-            clipTimer = clip.length;
+            _clipTimer = clip.length;
         }
 
         [ClientRpc]
-        void FinishProcClientRpc()
+        void AddNoteToCramptesPlayerClientRpc(string note)
         {
-            isProccing = false;
+            if (CurrentCramptesPlayer == null)
+            {
+                return;
+            }
 
-            Landmine.SpawnExplosion(CurrentCramptesPlayer.transform.position + Vector3.up, true, 5.7f, 6f);
+            StartOfRound.Instance.gameStats.allPlayerStats[CurrentCramptesPlayer.playerClientId].playerNotes.Add(note);
+        }
 
+        void FinishProc()
+        {
+            _isProccing = false;
+
+            if (CurrentCramptesPlayer == null)
+            {
+                return;
+            }
+
+            FinishProcClientRpc(CurrentCramptesPlayer.NetworkObject);
+            AddNoteToCramptesPlayerClientRpc("Cramptes time");
+            CoinguesManager.Instance.RemoveCoinguesServerRpc(CurrentCramptesPlayer.NetworkObject, CoinguesManager.CRAMPTES_PROC_MALUS);
             SetCramptesPlayerClientRpc(0, false);
+        }
+
+        [ClientRpc]
+        void FinishProcClientRpc(NetworkObjectReference playerRef)
+        {
+            if (!playerRef.TryGet(out var player))
+            {
+                return;
+            }
+
+            Landmine.SpawnExplosion(player.transform.position + Vector3.up, true, 5.7f, 6f);
         }
 
         static PlayerControllerB GetPlayer(ulong playerNetId)

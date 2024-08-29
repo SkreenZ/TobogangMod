@@ -25,17 +25,18 @@ public class TobogangMod : BaseUnityPlugin
     public class TobogangItems
     {
         public static readonly string Purge = "Purge";
+        public static readonly string TaGueule = "TaGueule";
     }
+
+    /* Instances */
 
     public static TobogangMod Instance { get; private set; } = null!;
     public new static ManualLogSource Logger { get; private set; } = null!;
     internal static Harmony? Harmony { get; set; }
     public static AssetBundle MainAssetBundle { get; private set; } = null!;
-
     public static GameObject NetworkPrefab { get; private set; } = null!;
-
-    public static ContentLoader ContentLoader;
-    public static Dictionary<string, GameObject> Prefabs = new Dictionary<string, GameObject>();
+    public static ContentLoader ContentLoader = null!;
+    public static Dictionary<string, GameObject> Prefabs = new();
 
     private void Awake()
     {
@@ -81,11 +82,22 @@ public class TobogangMod : BaseUnityPlugin
 
     void CreateItems()
     {
+        /*
         ContentLoader.Register(new ScrapItem(TobogangItems.Purge, "Assets/CustomAssets/TobogangPurge.asset", 0, Levels.LevelTypes.None, null, (Item item) => {
             TobogangPurge script = item.spawnPrefab.AddComponent<TobogangPurge>();
             script.itemProperties = item;
             script.grabbable = true;
             script.itemProperties.canBeGrabbedBeforeGameStart = true;
+        }));
+        */
+
+        ContentLoader.Register(new ScrapItem(TobogangItems.TaGueule, "Assets/CustomAssets/TobogangTaGueule.asset", 0, Levels.LevelTypes.None, null, item => {
+            var script = item.spawnPrefab.AddComponent<TobogangTaGueule>();
+            script.itemProperties = item;
+            script.grabbable = true;
+            script.itemProperties.canBeGrabbedBeforeGameStart = true;
+            script.itemProperties.rotationOffset = new Vector3(0f, 90f, 0f);
+            script.itemProperties.positionOffset = new Vector3(0f, 0.08f, 0f);
         }));
 
         Logger.LogInfo("Registered items");

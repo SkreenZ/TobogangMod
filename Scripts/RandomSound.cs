@@ -25,11 +25,6 @@ namespace TobogangMod.Scripts
             NetworkPrefab = LethalLib.Modules.NetworkPrefabs.CloneNetworkPrefab(TobogangMod.NetworkPrefab, "RandomSound");
             NetworkPrefab.AddComponent<RandomSound>();
             NetworkPrefab.AddComponent<AudioSourcePlayer>();
-        }
-
-        private void Start()
-        {
-            TobogangMod.Logger.LogDebug("New RandomSound spawned");
 
             if (Sounds.Count == 0)
             {
@@ -38,6 +33,11 @@ namespace TobogangMod.Scripts
                     Sounds.Add(Path.GetFileName(file));
                 }
             }
+        }
+
+        private void Start()
+        {
+            TobogangMod.Logger.LogDebug("New RandomSound spawned");
 
             // 1% chance to be crazy
             if (UnityEngine.Random.Range(0f, 1f) <= 0.01f && (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
@@ -65,7 +65,7 @@ namespace TobogangMod.Scripts
             {
                 _timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
 
-                var soundIndex = UnityEngine.Random.RandomRangeInt(0, Sounds.Count - 1);
+                var soundIndex = UnityEngine.Random.RandomRangeInt(0, Sounds.Count);
 
                 PlaySoundClientRpc(soundIndex);
             }
