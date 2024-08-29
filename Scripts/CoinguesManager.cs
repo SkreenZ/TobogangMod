@@ -156,7 +156,7 @@ namespace TobogangMod.Scripts
                 return;
             }
 
-            PlayerControllerB playerController = playerNetworkObject.gameObject.GetComponent<PlayerControllerB>();
+            var playerController = playerNetworkObject.gameObject.GetComponent<PlayerControllerB>();
 
             _coingues[GetPlayerId(playerController)] = newCoingues;
         }
