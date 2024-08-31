@@ -26,9 +26,11 @@ namespace TobogangMod.Scripts
             Keywords = ["rp joel", "joel", "rp joe", "rpjoel", "rpjoe", "rpj", "rp j"];
         }
 
-        protected override void ItemActivatedOnClient(PlayerControllerB targetPlayer, PlayerControllerB sourcePlayer)
+        protected override void ItemActivatedOnClient(GameObject targetPlayerOrEnemy, PlayerControllerB sourcePlayer)
         {
-            if (targetPlayer == StartOfRound.Instance.localPlayerController)
+            var targetPlayer = targetPlayerOrEnemy.GetComponent<PlayerControllerB>();
+
+            if (targetPlayer != null && targetPlayer == StartOfRound.Instance.localPlayerController)
             {
                 LocalPlayerIsDeaf = true;
                 StartOfRound.Instance.UpdatePlayerVoiceEffects();

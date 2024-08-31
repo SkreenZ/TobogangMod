@@ -36,11 +36,13 @@ namespace TobogangMod.Scripts.Items
             playerHeldBy.interactRay = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
 
             float closest = -1f;
-            PlayerControllerB? hitPlayer = null;
+            GameObject? hitObject = null;
 
-            foreach (var hit in Physics.RaycastAll(playerHeldBy.interactRay, playerHeldBy.grabDistance, playerHeldBy.playerMask))
+            foreach (var hit in Physics.RaycastAll(playerHeldBy.interactRay, playerHeldBy.grabDistance))
             {
-                if (hit.collider.gameObject.GetComponent<PlayerControllerB>() == playerHeldBy)
+                if (hit.collider.gameObject.GetComponent<PlayerControllerB>() == playerHeldBy ||
+                    (hit.collider.gameObject.GetComponent<PlayerControllerB>() == null
+                     && hit.collider.gameObject.GetComponent<EnemyAI>() == null))
                 {
                     continue;
                 }
@@ -48,14 +50,22 @@ namespace TobogangMod.Scripts.Items
                 if (closest == -1f || hit.distance < closest)
                 {
                     closest = hit.distance;
-                    hitPlayer = hit.collider.gameObject.GetComponent<PlayerControllerB>();
+                    hitObject = hit.collider.gameObject;
                 }
             }
 
-            if (hitPlayer != null)
+            if (hitObject != null)
             {
-                TobogangMod.Logger.LogDebug($"Player hit: {hitPlayer.playerUsername}");
-                ActivateOnPlayerServerRpc(hitPlayer.NetworkObject, playerHeldBy.NetworkObject);
+                if (hitObject.GetComponent<PlayerControllerB>() != null)
+                {
+                    TobogangMod.Logger.LogDebug($"Player hit: {hitObject.GetComponent<PlayerControllerB>().playerUsername}");
+                }
+                else
+                {
+                    TobogangMod.Logger.LogDebug($"Enemy hit: {hitObject.GetComponent<EnemyAI>().enemyType.enemyName}");
+                }
+
+                ActivateOnPlayerOrEnemyServerRpc(hitObject.GetComponent<NetworkObject>(), playerHeldBy.NetworkObject);
             }
             else
             {
@@ -64,37 +74,37 @@ namespace TobogangMod.Scripts.Items
         }
 
         [ServerRpc(RequireOwnership = false)]
-        void ActivateOnPlayerServerRpc(NetworkObjectReference targetPlayerRef, NetworkObjectReference sourcePlayerRef)
+        void ActivateOnPlayerOrEnemyServerRpc(NetworkObjectReference targetPlayerOrEnemyRef, NetworkObjectReference sourcePlayerRef)
         {
-            if (!targetPlayerRef.TryGet(out var targetPlayer) || !sourcePlayerRef.TryGet(out var sourcePlayer))
+            if (!targetPlayerOrEnemyRef.TryGet(out var targetPlayerOrEnemy) || !sourcePlayerRef.TryGet(out var sourcePlayer))
             {
                 return;
             }
 
-            ItemActivatedOnServer(targetPlayer.gameObject.GetComponent<PlayerControllerB>(), sourcePlayer.gameObject.GetComponent<PlayerControllerB>());
-            ActivateOnPlayerClientRpc(targetPlayerRef, playerHeldBy.NetworkObject);
+            ItemActivatedOnServer(targetPlayerOrEnemy.gameObject, sourcePlayer.gameObject.GetComponent<PlayerControllerB>());
+            ActivateOnPlayerOrEnemyClientRpc(targetPlayerOrEnemyRef, playerHeldBy.NetworkObject);
         }
 
         [ClientRpc]
-        void ActivateOnPlayerClientRpc(NetworkObjectReference targetPlayerRef, NetworkObjectReference sourcePlayerRef)
+        void ActivateOnPlayerOrEnemyClientRpc(NetworkObjectReference targetPlayerOrEnemyRef, NetworkObjectReference sourcePlayerRef)
         {
-            if (!targetPlayerRef.TryGet(out var targetPlayerNet) || !sourcePlayerRef.TryGet(out var sourcePlayerNet))
+            if (!targetPlayerOrEnemyRef.TryGet(out var targetPlayerOrEnemyNet) || !sourcePlayerRef.TryGet(out var sourcePlayerNet))
             {
                 return;
             }
 
-            var targetPlayer = targetPlayerNet.gameObject.GetComponent<PlayerControllerB>();
+            var targetPlayerOrEnemy = targetPlayerOrEnemyNet.gameObject;
 
-            DestroyObjectInHand(targetPlayer);
+            DestroyObjectInHand(sourcePlayerNet.GetComponentInChildren<PlayerControllerB>());
 
-            ItemActivatedOnClient(targetPlayer, sourcePlayerNet.gameObject.GetComponent<PlayerControllerB>());
+            ItemActivatedOnClient(targetPlayerOrEnemy, sourcePlayerNet.gameObject.GetComponent<PlayerControllerB>());
         }
 
-        protected virtual void ItemActivatedOnServer(PlayerControllerB targetPlayer, PlayerControllerB sourcePlayer)
+        protected virtual void ItemActivatedOnServer(GameObject targetPlayerOrEnemy, PlayerControllerB sourcePlayer)
         {
         }
 
-        protected virtual void ItemActivatedOnClient(PlayerControllerB targetPlayer, PlayerControllerB sourcePlayer)
+        protected virtual void ItemActivatedOnClient(GameObject targetPlayerOrEnemy, PlayerControllerB sourcePlayer)
         {
         }
     }

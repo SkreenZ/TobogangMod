@@ -25,14 +25,23 @@ namespace TobogangMod.Scripts
             Keywords = ["ta gueule", "ta gueul", "ta gueu", "ta gue", "ta gu", "ta g", "tg", "tagueule", "tagueul", "tagueu", "tague", "tagu", "tag"];
         }
 
-        protected override void ItemActivatedOnServer(PlayerControllerB targetPlayer, PlayerControllerB sourcePlayer)
+        protected override void ItemActivatedOnServer(GameObject targetPlayerOrEnemy, PlayerControllerB sourcePlayer)
         {
-            StartCoroutine(WaitAndUnmutePlayerCoroutine(targetPlayer.gameObject.GetComponent<PlayerControllerB>()));
+            var targetPlayer = targetPlayerOrEnemy.GetComponent<PlayerControllerB>();
+
+            if (targetPlayer == null)
+            {
+                return;
+            }
+
+            StartCoroutine(WaitAndUnmutePlayerCoroutine(targetPlayer));
         }
 
-        protected override void ItemActivatedOnClient(PlayerControllerB targetPlayer, PlayerControllerB sourcePlayer)
+        protected override void ItemActivatedOnClient(GameObject targetPlayerOrEnemy, PlayerControllerB sourcePlayer)
         {
-            if (targetPlayer == StartOfRound.Instance.localPlayerController)
+            var targetPlayer = targetPlayerOrEnemy.GetComponent<PlayerControllerB>();
+
+            if (targetPlayer == null || targetPlayer == StartOfRound.Instance.localPlayerController)
             {
                 return;
             }
