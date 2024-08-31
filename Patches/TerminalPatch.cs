@@ -42,6 +42,7 @@ namespace TobogangMod.Patches
 
         private static readonly TerminalNode COINGUES_NODE = ScriptableObject.CreateInstance<TerminalNode>();
         private static readonly TerminalNode TOBOGANG_NODE = ScriptableObject.CreateInstance<TerminalNode>();
+        private static readonly TerminalNode CRAMPTES_NODE = ScriptableObject.CreateInstance<TerminalNode>();
 #if DEBUG
         private static readonly TerminalNode MOTHERLODE_NODE = ScriptableObject.CreateInstance<TerminalNode>();
         private static readonly TerminalNode DAMAGE_NODE = ScriptableObject.CreateInstance<TerminalNode>();
@@ -52,6 +53,7 @@ namespace TobogangMod.Patches
 #if DEBUG
             { MOTHERLODE_NODE, ["motherlode"] },
             { DAMAGE_NODE, ["damage"] },
+            { CRAMPTES_NODE, ["cramptes", "cramptés", "crampte", "crampté"] },
 #endif
             { COINGUES_NODE, ["coingues", "coingue", "coingu", "coing", "coin"] },
             { TOBOGANG_NODE, ["tobogang", "tobogan", "toboga", "tobog", "tobo"] }
@@ -143,12 +145,10 @@ namespace TobogangMod.Patches
                     {
                         node.playSyncedClip = (int)TerminalSounds.Error;
                     }
-
-                    node.displayText += "\n\n";
                 }
                 else
                 {
-                    node.displayText = "Achat annulé\n\n";
+                    node.displayText = "Achat annulé";
                 }
 
                 currentlyBuyingItem = null;
@@ -167,6 +167,12 @@ namespace TobogangMod.Patches
                 {
                     node.displayText += $"* {item.itemProperties.itemName}  //  {item.CoinguesPrice} coingues\n";
                 }
+            }
+            else if (__result == CRAMPTES_NODE)
+            {
+                node.displayText = CramptesManager.Instance.CurrentCramptesPlayer != null
+                    ? $"{CramptesManager.Instance.CurrentCramptesPlayer.playerUsername} a les cramptés."
+                    : "Personne n'a les cramptés.";
             }
             else if (itemNode.HasValue && currentlyBuyingItem == null)
             {
