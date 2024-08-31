@@ -25,68 +25,19 @@ namespace TobogangMod.Scripts
             Keywords = ["ta gueule", "ta gueul", "ta gueu", "ta gue", "ta gu", "ta g", "tg", "tagueule", "tagueul", "tagueu", "tague", "tagu", "tag"];
         }
 
-        public override void ItemActivate(bool used, bool buttonDown = true)
+        protected override void ItemActivatedOnServer(PlayerControllerB targetPlayer, PlayerControllerB sourcePlayer)
         {
-            playerHeldBy.interactRay = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
-
-            float closest = -1f;
-            PlayerControllerB? hitPlayer = null;
-
-            foreach (var hit in Physics.RaycastAll(playerHeldBy.interactRay, playerHeldBy.grabDistance, playerHeldBy.playerMask))
-            {
-                if (hit.collider.gameObject.GetComponent<PlayerControllerB>() == playerHeldBy)
-                {
-                    continue;
-                }
-
-                if (closest == -1f || hit.distance < closest)
-                {
-                    closest = hit.distance;
-                    hitPlayer = hit.collider.gameObject.GetComponent<PlayerControllerB>();
-                }
-            }
-
-            if (hitPlayer != null)
-            {
-                TobogangMod.Logger.LogDebug($"Player hit: {hitPlayer.playerUsername}");
-                ActivateOnPlayerServerRpc(hitPlayer.NetworkObject);
-            }
-            else
-            {
-                TobogangMod.Logger.LogDebug("No player hit");
-            }
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void ActivateOnPlayerServerRpc(NetworkObjectReference targetPlayerRef)
-        {
-            if (!targetPlayerRef.TryGet(out var targetPlayer))
-            {
-                return;
-            }
-
-            ActivateOnPlayerClientRpc(targetPlayerRef, playerHeldBy.NetworkObject);
             StartCoroutine(WaitAndUnmutePlayerCoroutine(targetPlayer.gameObject.GetComponent<PlayerControllerB>()));
         }
 
-        [ClientRpc]
-        void ActivateOnPlayerClientRpc(NetworkObjectReference targetPlayerRef, NetworkObjectReference sourcePlayerRef)
+        protected override void ItemActivatedOnClient(PlayerControllerB targetPlayer, PlayerControllerB sourcePlayer)
         {
-            if (!targetPlayerRef.TryGet(out var targetPlayerNet))
+            if (targetPlayer == StartOfRound.Instance.localPlayerController)
             {
                 return;
             }
 
-            var player = targetPlayerNet.gameObject.GetComponent<PlayerControllerB>();
-
-            DestroyObjectInHand(player);
-
-            if (player == StartOfRound.Instance.localPlayerController)
-            {
-                return;
-            }
-
-            CoinguesManager.Instance.MutePlayerServerRpc(player.NetworkObject, sourcePlayerRef);
+            CoinguesManager.Instance.MutePlayerServerRpc(targetPlayer.NetworkObject, sourcePlayer.NetworkObject);
         }
 
         private IEnumerator WaitAndUnmutePlayerCoroutine(PlayerControllerB player)

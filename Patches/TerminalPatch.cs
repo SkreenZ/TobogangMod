@@ -218,7 +218,7 @@ namespace TobogangMod.Patches
 
             if (slot == -1)
             {
-                node.displayText = "Tu as besoin d'un slot libre";
+                node.displayText = "Tu as besoin d'un slot libre.";
                 return false;
             }
 

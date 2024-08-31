@@ -27,6 +27,7 @@ public class TobogangMod : BaseUnityPlugin
     {
         public static readonly string PURGE = "Purge";
         public static readonly string TA_GUEULE = "TaGueule";
+        public static readonly string RP_JOEL = "RPJoel";
     }
 
     /* Instances */
@@ -94,14 +95,14 @@ public class TobogangMod : BaseUnityPlugin
         }));
         */
 
-        ContentLoader.Register(new ScrapItem(TobogangItems.TA_GUEULE, "Assets/CustomAssets/TobogangTaGueule.asset", 0, Levels.LevelTypes.None, null, item => {
+        ContentLoader.Register(new ScrapItem(TobogangItems.TA_GUEULE, "Assets/CustomAssets/Items/TobogangTaGueule.asset", 0, Levels.LevelTypes.None, null, item => {
             var script = item.spawnPrefab.AddComponent<TobogangTaGueule>();
             script.itemProperties = item;
-            script.grabbable = true;
-            script.itemProperties.canBeGrabbedBeforeGameStart = true;
-            script.itemProperties.rotationOffset = new Vector3(0f, 90f, 0f);
-            script.itemProperties.positionOffset = new Vector3(0f, 0.08f, 0f);
-            script.itemProperties.isDefensiveWeapon = true;
+        }));
+
+        ContentLoader.Register(new ScrapItem(TobogangItems.RP_JOEL, "Assets/CustomAssets/Items/TobogangRPJoel.asset", 0, Levels.LevelTypes.None, null, item => {
+            var script = item.spawnPrefab.AddComponent<TobogangRPJoel>();
+            script.itemProperties = item;
         }));
 
         Logger.LogInfo("Registered items");

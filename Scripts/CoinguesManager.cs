@@ -98,12 +98,31 @@ namespace TobogangMod.Scripts
             grabbable.StartCoroutine(WaitAndGiveItemToPlayer(playerController, grabbable));
         }
 
-        private static IEnumerator WaitAndGiveItemToPlayer(PlayerControllerB player, GrabbableObject grabbable)
+        private IEnumerator WaitAndGiveItemToPlayer(PlayerControllerB player, GrabbableObject grabbable)
         {
             yield return new WaitForEndOfFrame();
 
-            player.GrabObjectServerRpc(grabbable.NetworkObject);
-            grabbable.parentObject = player.localItemHolder;
+            bool grabValidated = !grabbable.heldByPlayerOnServer;
+
+            if (grabValidated)
+            {
+                grabbable.heldByPlayerOnServer = true;
+                grabbable.NetworkObject.ChangeOwnership(player.actualClientId);
+            }
+
+            player.GrabObjectClientRpc(grabValidated, grabbable.NetworkObject);
+            SetGrabbableParentClientRpc(grabbable.NetworkObject, player.NetworkObject);
+        }
+
+        [ClientRpc]
+        private void SetGrabbableParentClientRpc(NetworkObjectReference grabbable, NetworkObjectReference player)
+        {
+            if (!grabbable.TryGet(out var grabbableNet) || !player.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            grabbableNet.GetComponentInChildren<GrabbableObject>().parentObject = playerNet.GetComponentInChildren<PlayerControllerB>().localItemHolder;
         }
 
         public static string GetPlayerId(PlayerControllerB player)

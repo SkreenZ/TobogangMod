@@ -10,7 +10,7 @@ namespace TobogangMod.Patches
     {
 
         [HarmonyPostfix, HarmonyPatch(nameof(StartOfRound.Awake))]
-        private static void AwakePostfix()
+        private static void AwakePostfix(StartOfRound __instance)
         {
             if (NetworkManager.Singleton.IsServer)
             {
@@ -19,7 +19,7 @@ namespace TobogangMod.Patches
                     var scrap = item as LethalLib.Modules.ContentLoader.ScrapItem;
                     if (scrap != null)
                     {
-                        StartOfRound.Instance.allItemsList.itemsList.Add(scrap.Item);
+                        __instance.allItemsList.itemsList.Add(scrap.Item);
                     }
                 }
 
@@ -29,6 +29,10 @@ namespace TobogangMod.Patches
                 GameObject coinguesManager = GameObject.Instantiate(CoinguesManager.NetworkPrefab, Vector3.zero, Quaternion.identity);
                 coinguesManager.GetComponent<NetworkObject>().Spawn();
             }
+
+#if DEBUG
+            __instance.speakerAudioSource.volume = 0f; // Just so i don't go insane while testing
+#endif
         }
 
         [HarmonyPatch(nameof(StartOfRound.UpdatePlayerVoiceEffects)), HarmonyPostfix]
@@ -36,7 +40,8 @@ namespace TobogangMod.Patches
         {
             foreach (var player in __instance.allPlayerScripts)
             {
-                if (CoinguesManager.Instance.MutedPlayers.Contains(player) && player != __instance.localPlayerController)
+                if (player != __instance.localPlayerController && player.voicePlayerState != null && 
+                    (CoinguesManager.Instance.MutedPlayers.Contains(player) || TobogangRPJoel.LocalPlayerIsDeaf))
                 {
                     player.voicePlayerState.Volume = 0f;
                 }
