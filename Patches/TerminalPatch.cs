@@ -15,9 +15,10 @@ namespace TobogangMod.Patches
     [HarmonyPatch(typeof(Terminal))]
     public class TerminalPatch
     {
-        public enum SpecialNodes
+        public enum TerminalSounds
         {
-            UnknownWord = 10
+            PurchaseSuccess = 0,
+            Error = 1
         }
 
         struct ItemNode
@@ -125,7 +126,6 @@ namespace TobogangMod.Patches
             TerminalNode node = ScriptableObject.CreateInstance<TerminalNode>();
             node.clearPreviousText = true;
 
-            bool isError = false;
             var itemNode = GetItemNode(__result);
 
             string s = __instance.screenText.text.Substring(__instance.screenText.text.Length - __instance.textAdded);
@@ -135,11 +135,20 @@ namespace TobogangMod.Patches
             {
                 if (s == "confirm")
                 {
-                    node.displayText = "Confirmed your order\n\n";
+                    if (TryBuyCurrentItem(player, ref node))
+                    {
+                        node.playSyncedClip = (int)TerminalSounds.PurchaseSuccess;
+                    }
+                    else
+                    {
+                        node.playSyncedClip = (int)TerminalSounds.Error;
+                    }
+
+                    node.displayText += "\n\n";
                 }
                 else
                 {
-                    node.displayText = "Order cancelled\n\n";
+                    node.displayText = "Achat annulé\n\n";
                 }
 
                 currentlyBuyingItem = null;
@@ -181,66 +190,47 @@ namespace TobogangMod.Patches
                 return;
             }
 
-            /*
-            if (__instance.terminalNodes.specialNodes.IndexOf(__result) == (int)SpecialNodes.UnknownWord)
-            {
-                switch (__result)
-                {
-                    case COINGUES_NODE:
-                    {
-                        int coingues = CoinguesManager.Instance.GetCoingues(player);
-                        node.displayText = $"Tu as {coingues} coingue{(coingues > 1 ? "s" : "")}";
-                        break;
-                    }
-
-                    case "tobo":
-                    case "tobog":
-                    case "toboga":
-                    case "tobogan":
-                    case "tobogang":
-                    {
-                            int slot = player.FirstEmptyItemSlot();
-
-                            if (slot == -1)
-                            {
-                                node.displayText = "Tu as besoin d'un slot libre";
-                                isError = true;
-                            }
-                            else
-                            {
-                                node.displayText = "kdo\n\n";
-                                CoinguesManager.Instance.GiveTobogangItemToPlayerServerRpc(TobogangMod.TobogangItems.Purge, player.GetComponent<NetworkObject>());
-                            }
-
-                            break;
-                    }
-
-#if DEBUG
-                    case "motherlod":
-                    {
-                        CoinguesManager.Instance.AddCoinguesServerRpc(player.NetworkObject, 100);
-                        node.displayText = "100 coingues gagnés\n\n";
-                        break;
-                    }
-#endif
-
-                    default:
-                    {
-                        return;
-                    }
-                }
-            }
-            */
-
-            if (isError)
-            {
-                node.playClip = __instance.terminalNodes.specialNodes[(int)SpecialNodes.UnknownWord].playClip;
-                node.playSyncedClip = __result.playSyncedClip;
-            }
-
             node.displayText += "\n\n";
             __result = node;
         }
 
+        private static bool TryBuyCurrentItem(PlayerControllerB player, ref TerminalNode node)
+        {
+            if (currentlyBuyingItem == null)
+            {
+                TobogangMod.Logger.LogDebug("Tried to buy a null item");
+                return false;
+            }
+
+            if (currentlyBuyingItem.CoinguesPrice > CoinguesManager.Instance.GetCoingues(player))
+            {
+                node.displayText = "Tu n'as pas assez de coingues pour acheter cet item.";
+                return false;
+            }
+
+            int slot = player.FirstEmptyItemSlot();
+
+            if (slot == -1)
+            {
+                node.displayText = "Tu as besoin d'un slot libre";
+                return false;
+            }
+
+            CoinguesManager.Instance.RemoveCoinguesServerRpc(player.NetworkObject, currentlyBuyingItem.CoinguesPrice);
+
+            CoinguesManager.Instance.GiveTobogangItemToPlayerServerRpc(currentlyBuyingItem.TobogangItemId, player.GetComponent<NetworkObject>());
+            node.displayText = $"Achat de {currentlyBuyingItem.itemProperties.itemName} réussi.";
+            currentlyBuyingItem = null;
+
+            return true;
+        }
+
+#if DEBUG
+        [HarmonyPatch(nameof(Terminal.PlayTerminalAudioServerRpc)), HarmonyPostfix]
+        private static void PlayTerminalAudioServerRpcPostfix(int clipIndex)
+        {
+            TobogangMod.Logger.LogDebug($"Played terminal audio index {clipIndex}");
+        }
+#endif
     }
 }

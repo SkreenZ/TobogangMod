@@ -5,12 +5,12 @@ using UnityEngine;
 
 namespace TobogangMod.Patches
 {
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(StartOfRound))]
     public class StartOfRoundPatch
     {
 
-        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Awake))]
-        static void AwakePostfix()
+        [HarmonyPostfix, HarmonyPatch(nameof(StartOfRound.Awake))]
+        private static void AwakePostfix()
         {
             if (NetworkManager.Singleton.IsServer)
             {
@@ -28,6 +28,18 @@ namespace TobogangMod.Patches
 
                 GameObject coinguesManager = GameObject.Instantiate(CoinguesManager.NetworkPrefab, Vector3.zero, Quaternion.identity);
                 coinguesManager.GetComponent<NetworkObject>().Spawn();
+            }
+        }
+
+        [HarmonyPatch(nameof(StartOfRound.UpdatePlayerVoiceEffects)), HarmonyPostfix]
+        private static void UpdatePlayerVoiceEffectsPostfix(StartOfRound __instance)
+        {
+            foreach (var player in __instance.allPlayerScripts)
+            {
+                if (CoinguesManager.Instance.MutedPlayers.Contains(player) && player != __instance.localPlayerController)
+                {
+                    player.voicePlayerState.Volume = 0f;
+                }
             }
         }
     }

@@ -18,6 +18,8 @@ namespace TobogangMod.Scripts
         public static CoinguesManager Instance { get; private set; }
         public static GameObject NetworkPrefab { get; private set; }
 
+        public List<PlayerControllerB> MutedPlayers { get; private set; } = [];
+
         private CoinguesStorage _coingues = new();
 
         public static void Init()
@@ -161,6 +163,63 @@ namespace TobogangMod.Scripts
             var playerController = playerNetworkObject.gameObject.GetComponent<PlayerControllerB>();
 
             _coingues[GetPlayerId(playerController)] = Math.Max(newCoingues, 0);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void MutePlayerServerRpc(NetworkObjectReference targetPlayerRef, NetworkObjectReference sourcePlayerRef)
+        {
+            MutePlayerClientRpc(targetPlayerRef, sourcePlayerRef);
+        }
+
+        [ClientRpc]
+        private void MutePlayerClientRpc(NetworkObjectReference targetPlayerRef, NetworkObjectReference sourcePlayerRef)
+        {
+            if (!targetPlayerRef.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            var player = playerNet.gameObject.GetComponent<PlayerControllerB>();
+
+            if (player != null)
+            {
+                TobogangMod.Logger.LogDebug($"Muted {player.playerUsername}");
+
+                MutedPlayers.Add(player);
+            }
+
+            if (player == StartOfRound.Instance.localPlayerController && sourcePlayerRef.TryGet(out var sourcePlayerNet))
+            {
+                HUDManager.Instance.DisplayGlobalNotification($"{sourcePlayerNet.gameObject.GetComponent<PlayerControllerB>().playerUsername} a utilise Ta gueule pour te mute pendant {Math.Round(TobogangTaGueule.MUTE_DURATION)} secondes");
+            }
+
+            StartOfRound.Instance.UpdatePlayerVoiceEffects();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void UnmutePlayerServerRpc(NetworkObjectReference playerRef)
+        {
+            UnmutePlayerClientRpc(playerRef);
+        }
+
+        [ClientRpc]
+        private void UnmutePlayerClientRpc(NetworkObjectReference playerRef)
+        {
+            if (!playerRef.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            var player = playerNet.gameObject.GetComponent<PlayerControllerB>();
+
+            if (player != null)
+            {
+                TobogangMod.Logger.LogDebug($"Unmuted {player.playerUsername}");
+
+                MutedPlayers.Remove(player);
+            }
+
+            StartOfRound.Instance.UpdatePlayerVoiceEffects();
         }
     }
 }

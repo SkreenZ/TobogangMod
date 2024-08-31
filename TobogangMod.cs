@@ -101,6 +101,7 @@ public class TobogangMod : BaseUnityPlugin
             script.itemProperties.canBeGrabbedBeforeGameStart = true;
             script.itemProperties.rotationOffset = new Vector3(0f, 90f, 0f);
             script.itemProperties.positionOffset = new Vector3(0f, 0.08f, 0f);
+            script.itemProperties.isDefensiveWeapon = true;
         }));
 
         Logger.LogInfo("Registered items");
