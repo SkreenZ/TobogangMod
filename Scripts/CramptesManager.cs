@@ -13,9 +13,11 @@ namespace TobogangMod.Scripts
 
 #if DEBUG
         private static readonly float CRAMPTES_CHANCE_ON_DAMAGE = 1f;
+        private static readonly float CRAMPTES_CHANCE_ON_ITEM_IN_SHIP = 1f;
         private static readonly float PROBA_INCREASE = 0.01f;
 #else
         private static readonly float CRAMPTES_CHANCE_ON_DAMAGE = 0.05f;
+        private static readonly float CRAMPTES_CHANCE_ON_ITEM_IN_SHIP = 0.025f;
         private static readonly float PROBA_INCREASE = 0.00001f; // Average 395s
 #endif
 
@@ -96,6 +98,15 @@ namespace TobogangMod.Scripts
             if (Random.Range(0f, 1f) <= CRAMPTES_CHANCE_ON_DAMAGE)
             {
                 SetCramptesPlayerClientRpc(playerId);
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void TryLoseCramptesServerRpc()
+        {
+            if (Random.Range(0f, 1f) <= CRAMPTES_CHANCE_ON_ITEM_IN_SHIP)
+            {
+                SetCramptesPlayerClientRpc(0);
             }
         }
 

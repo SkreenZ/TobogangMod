@@ -45,6 +45,7 @@ namespace TobogangMod.Patches
                 TobogangMod.Logger.LogDebug($"{__instance.playerUsername} dropped in ship {gObject.itemProperties.itemName}");
 #endif
                 CoinguesManager.Instance.AddCoinguesServerRpc(__instance.NetworkObject, gObject.scrapValue);
+                CramptesManager.Instance.TryLoseCramptesServerRpc();
             }
 
             return true;
