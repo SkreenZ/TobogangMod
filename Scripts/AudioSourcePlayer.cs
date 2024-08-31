@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace TobogangMod.Scripts
 {
-    public class AudioSourcePlayer : MonoBehaviour
+    public class AudioSourcePlayerOld : MonoBehaviour
     {
         AudioSource audioSource;
 

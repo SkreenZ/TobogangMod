@@ -1,6 +1,7 @@
 ﻿using GameNetcodeStuff;
 using HarmonyLib;
 using TobogangMod.Scripts;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace TobogangMod.Patches
@@ -13,12 +14,26 @@ namespace TobogangMod.Patches
         private static void StartPostfix(PlayerControllerB __instance)
         {
             TobogangMod.Logger.LogDebug($"Player steam id: {__instance.playerSteamId}");
-            __instance.gameObject.AddComponent<AudioSourcePlayer>();
+
+            if (NetworkManager.Singleton.IsServer)
+            {
+                GameObject randomSoundObject = GameObject.Instantiate(RandomSound.NetworkPrefab, __instance.gameObject.transform);
+                var randomSound = randomSoundObject.GetComponent<RandomSound>();
+                randomSound.NetworkObject.Spawn();
+
+                randomSound.SetActiveServerRpc(false);
+            }
         }
 
         [HarmonyPatch(nameof(PlayerControllerB.Update)), HarmonyPostfix]
         private static void UpdatePostfix(PlayerControllerB __instance)
         {
+            var randomSound = __instance.gameObject.GetComponentInChildren<RandomSound>();
+
+            if (randomSound != null)
+            {
+                randomSound.SetPositionServerRpc(__instance.transform.position);
+            }
         }
 
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer)), HarmonyPostfix]

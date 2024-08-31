@@ -151,7 +151,7 @@ namespace TobogangMod.Scripts
             _isProccing = true;
 
             AudioClip clip = SoundTool.GetAudioClip("TobogangMod/sounds", RandomSound.Sounds[soundIndex]);
-            CurrentCramptesPlayer.GetComponent<AudioSourcePlayer>().Play(clip);
+            CurrentCramptesPlayer.GetComponent<RandomSound>().AudioSource.PlayOneShot(clip);
             _clipTimer = clip.length;
         }
 

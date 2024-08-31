@@ -12,6 +12,8 @@ namespace TobogangMod.Scripts.Items
         public string TobogangItemId { get; protected set; } = "";
         public int CoinguesPrice { get; set; } = 0;
         public string[] Keywords { get; protected set; } = [];
+        public bool IsUsableOnPlayers = true;
+        public bool IsUsableOnEnemies = false;
 
         protected bool IsUsingPlaceholderPrefab = true;
 
@@ -56,7 +58,19 @@ namespace TobogangMod.Scripts.Items
 
             if (hitObject != null)
             {
-                if (hitObject.GetComponent<PlayerControllerB>() != null)
+                var targetIsPlayer = hitObject.GetComponent<PlayerControllerB>() != null;
+
+                if (targetIsPlayer && !IsUsableOnPlayers)
+                {
+                    return;
+                }
+
+                if (!targetIsPlayer && !IsUsableOnEnemies)
+                {
+                    return;
+                }
+
+                if (targetIsPlayer)
                 {
                     TobogangMod.Logger.LogDebug($"Player hit: {hitObject.GetComponent<PlayerControllerB>().playerUsername}");
                 }

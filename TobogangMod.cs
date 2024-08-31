@@ -14,6 +14,7 @@ using static LethalLib.Modules.ContentLoader;
 using System.Collections.Generic;
 using LethalLib.Extras;
 using TobogangMod.Scripts.Items;
+using NetworkPrefabs = LethalLib.Modules.NetworkPrefabs;
 
 namespace TobogangMod;
 
@@ -28,6 +29,7 @@ public class TobogangMod : BaseUnityPlugin
         public static readonly string PURGE = "Purge";
         public static readonly string TA_GUEULE = "TaGueule";
         public static readonly string RP_JOEL = "RPJoel";
+        public static readonly string CRAZY_TOBOBOT = "CrazyTobobot";
     }
 
     /* Instances */
@@ -102,6 +104,11 @@ public class TobogangMod : BaseUnityPlugin
 
         ContentLoader.Register(new ScrapItem(TobogangItems.RP_JOEL, "Assets/CustomAssets/Items/TobogangRPJoel.asset", 0, Levels.LevelTypes.None, null, item => {
             var script = item.spawnPrefab.AddComponent<TobogangRPJoel>();
+            script.itemProperties = item;
+        }));
+
+        ContentLoader.Register(new ScrapItem(TobogangItems.CRAZY_TOBOBOT, "Assets/CustomAssets/Items/TobogangCrazyTobobot.asset", 0, Levels.LevelTypes.None, null, item => {
+            var script = item.spawnPrefab.AddComponent<TobogangCrazyTobobot>();
             script.itemProperties = item;
         }));
 

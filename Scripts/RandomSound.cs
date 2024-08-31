@@ -4,27 +4,32 @@ using System.Collections.Generic;
 using System.IO;
 using Unity.Netcode;
 using UnityEngine;
+using NetworkPrefabs = LethalLib.Modules.NetworkPrefabs;
 
 namespace TobogangMod.Scripts
 {
     public class RandomSound : NetworkBehaviour
     {
+        private static readonly float BASE_MIN_TIME = 30f;
+        private static readonly float BASE_MAX_TIME = 300f;
+        private static readonly float CRAZY_MIN_TIME = 1f;
+        private static readonly float CRAZY_MAX_TIME = 5f;
+
         public static List<string> Sounds = [];
-
-        public float MinTimeBetweenSounds = 30f;
-
-        public float MaxTimeBetweenSounds = 300f;
-
         public static GameObject NetworkPrefab = null!;
 
+        public AudioSource AudioSource = null!;
+        public float MinTimeBetweenSounds = BASE_MIN_TIME;
+        public float MaxTimeBetweenSounds = BASE_MAX_TIME;
 
+        private bool _active = true;
         private float _timeUntilNextSound = -1f;
 
         public static void Init()
         {
-            NetworkPrefab = LethalLib.Modules.NetworkPrefabs.CloneNetworkPrefab(TobogangMod.NetworkPrefab, "RandomSound");
+            NetworkPrefab = TobogangMod.MainAssetBundle.LoadAsset<GameObject>("Assets/CustomPrefabs/SoundPlayer.prefab");
             NetworkPrefab.AddComponent<RandomSound>();
-            NetworkPrefab.AddComponent<AudioSourcePlayer>();
+            NetworkPrefabs.RegisterNetworkPrefab(NetworkPrefab);
 
             if (Sounds.Count == 0)
             {
@@ -39,11 +44,12 @@ namespace TobogangMod.Scripts
         {
             TobogangMod.Logger.LogDebug("New RandomSound spawned");
 
+            AudioSource = GetComponent<AudioSource>();
+
             // 1% chance to be crazy
             if (UnityEngine.Random.Range(0f, 1f) <= 0.01f && (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
             {
-                MinTimeBetweenSounds = 1f;
-                MaxTimeBetweenSounds = 5f;
+                SetCrazy(true);
             }
 
             _timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
@@ -54,7 +60,7 @@ namespace TobogangMod.Scripts
         {
             bool isServer = NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer;
 
-            if (!isServer)
+            if (!isServer || !_active)
             {
                 return;
             }
@@ -71,15 +77,46 @@ namespace TobogangMod.Scripts
             }
         }
 
+        [ServerRpc(RequireOwnership = false)]
+        public void SetPositionServerRpc(Vector3 position)
+        {
+            SetPositionClientRpc(position);
+        }
+
+        [ClientRpc]
+        public void SetPositionClientRpc(Vector3 position)
+        {
+            gameObject.transform.position = position;
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SetActiveServerRpc(bool active)
+        {
+            TobogangMod.Logger.LogDebug($"Random sound set active: {active}");
+
+            if (active)
+            {
+                _timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
+            }
+
+            _active = active;
+        }
+
         [ClientRpc]
         void PlaySoundClientRpc(int soundIndex)
         {
             PlaySound(soundIndex);
         }
 
+        public void SetCrazy(bool crazy)
+        {
+            MinTimeBetweenSounds = CRAZY_MIN_TIME;
+            MaxTimeBetweenSounds = CRAZY_MAX_TIME;
+        }
+
         void PlaySound(int soundIndex)
         {
-            AudioSourcePlayer audioSourcePlayer = gameObject.GetComponent<AudioSourcePlayer>();
+            AudioSource audioSourcePlayer = gameObject.GetComponent<AudioSource>();
 
             if (audioSourcePlayer == null)
             {
@@ -93,7 +130,7 @@ namespace TobogangMod.Scripts
                 return;
             }
 
-            audioSourcePlayer.Play(SoundTool.GetAudioClip("TobogangMod/sounds", Sounds[soundIndex]));
+            audioSourcePlayer.PlayOneShot(SoundTool.GetAudioClip("TobogangMod/sounds", Sounds[soundIndex]));
         }
     }
 }
