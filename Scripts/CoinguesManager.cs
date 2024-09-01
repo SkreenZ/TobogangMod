@@ -115,14 +115,19 @@ namespace TobogangMod.Scripts
         }
 
         [ClientRpc]
-        private void SetGrabbableParentClientRpc(NetworkObjectReference grabbable, NetworkObjectReference player)
+        private void SetGrabbableParentClientRpc(NetworkObjectReference grabbableRef, NetworkObjectReference player)
         {
-            if (!grabbable.TryGet(out var grabbableNet) || !player.TryGet(out var playerNet))
+            if (!grabbableRef.TryGet(out var grabbableNet) || !player.TryGet(out var playerNet))
             {
                 return;
             }
 
-            grabbableNet.GetComponentInChildren<GrabbableObject>().parentObject = playerNet.GetComponentInChildren<PlayerControllerB>().localItemHolder;
+            var grabbable = grabbableNet.GetComponentInChildren<GrabbableObject>();
+            grabbable.parentObject = playerNet.GetComponentInChildren<PlayerControllerB>().localItemHolder;
+            foreach (var collider in grabbable.gameObject.GetComponentsInChildren<Collider>())
+            {
+                collider.enabled = false;
+            }
         }
 
         public static string GetPlayerId(PlayerControllerB player)
