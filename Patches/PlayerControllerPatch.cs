@@ -17,10 +17,11 @@ namespace TobogangMod.Patches
 
             if (NetworkManager.Singleton.IsServer)
             {
-                GameObject randomSoundObject = GameObject.Instantiate(RandomSound.NetworkPrefab, __instance.gameObject.transform);
+                GameObject randomSoundObject = GameObject.Instantiate(RandomSound.NetworkPrefab, __instance.transform.position, Quaternion.identity);
                 var randomSound = randomSoundObject.GetComponent<RandomSound>();
                 randomSound.NetworkObject.Spawn();
 
+                randomSound.SetParentClientRpc(__instance.NetworkObject);
                 randomSound.SetActiveServerRpc(false);
             }
         }
@@ -28,12 +29,6 @@ namespace TobogangMod.Patches
         [HarmonyPatch(nameof(PlayerControllerB.Update)), HarmonyPostfix]
         private static void UpdatePostfix(PlayerControllerB __instance)
         {
-            var randomSound = __instance.gameObject.GetComponentInChildren<RandomSound>();
-
-            if (randomSound != null)
-            {
-                randomSound.SetPositionServerRpc(__instance.transform.position);
-            }
         }
 
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer)), HarmonyPostfix]

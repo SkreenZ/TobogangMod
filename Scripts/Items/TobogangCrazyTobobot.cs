@@ -10,7 +10,7 @@ namespace TobogangMod.Scripts.Items
 {
     internal class TobogangCrazyTobobot : TobogangItem
     {
-        private static readonly float CRAZY_DURATION = 30f;
+        private static readonly float CRAZY_DURATION = 60f;
 
         public static List<PlayerControllerB> CrazyPlayers = [];
 
@@ -39,9 +39,9 @@ namespace TobogangMod.Scripts.Items
 
             SetPlayerIsCrazyClientRpc(playerRef, isCrazy);
 
-            var randomSound = playerNet.GetComponentInChildren<RandomSound>();
+            var randomSound = RandomSound.Instances[playerNet.NetworkObjectId];
 
-            randomSound.SetCrazy(isCrazy);
+            randomSound.SetCrazyServerRpc(isCrazy);
             randomSound.SetActiveServerRpc(isCrazy);
 
             if (isCrazy)

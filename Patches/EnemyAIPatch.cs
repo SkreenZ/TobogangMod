@@ -23,6 +23,8 @@ namespace TobogangMod.Patches
             {
                 GameObject randomSoundObject = GameObject.Instantiate(RandomSound.NetworkPrefab, __instance.gameObject.transform);
                 randomSoundObject.GetComponent<RandomSound>().NetworkObject.Spawn();
+
+                randomSoundObject.GetComponent<RandomSound>().SetParentClientRpc(__instance.NetworkObject);
             }
         }
 
@@ -43,8 +45,9 @@ namespace TobogangMod.Patches
                 }
 
                 var d = Vector3.Distance(collider.transform.position, player.transform.position);
+                var randomSound = RandomSound.Instances[player.NetworkObjectId];
 
-                if (player != null && (distance < 0f || d < distance))
+                if (randomSound != null && randomSound.IsCrazy && (distance < 0f || d < distance))
                 {
                     playerInRange = player;
                     distance = d;

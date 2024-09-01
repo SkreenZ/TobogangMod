@@ -16,13 +16,17 @@ namespace TobogangMod.Scripts
 
         public static List<AudioClip> Sounds = [];
         public static GameObject NetworkPrefab = null!;
+        public static Dictionary<ulong, RandomSound> Instances = [];
 
+        public GameObject? Parent { get; private set; } = null;
         public AudioSource AudioSource = null!;
         public float MinTimeBetweenSounds = BASE_MIN_TIME;
         public float MaxTimeBetweenSounds = BASE_MAX_TIME;
+        public bool IsCrazy { get; private set; } = false;
 
         private bool _active = true;
         private float _timeUntilNextSound = -1f;
+        private bool _started = false;
 
         public static void Init()
         {
@@ -64,7 +68,7 @@ namespace TobogangMod.Scripts
             // 1% chance to be crazy
             if (UnityEngine.Random.Range(0f, 1f) <= 0.01f && (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
             {
-                SetCrazy(true);
+                SetCrazyServerRpc(true);
             }
 
             _timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
@@ -74,6 +78,34 @@ namespace TobogangMod.Scripts
         private void Update()
         {
             bool isServer = NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer;
+
+            if (Parent == null)
+            {
+                if (!_started)
+                {
+                    SetParentServerRpc();
+                }
+                else if (isServer)
+                {
+                    NetworkObject.Despawn();
+                }
+
+                return;
+            }
+
+            if (!Parent.GetComponent<NetworkObject>().IsSpawned)
+            {
+                if (_started && isServer)
+                {
+                    NetworkObject.Despawn();
+                }
+
+                return;
+            }
+
+            _started = true;
+
+            SetPositionServerRpc(Parent.transform.position);
 
             if (!isServer || !_active)
             {
@@ -90,6 +122,36 @@ namespace TobogangMod.Scripts
 
                 PlaySoundClientRpc(soundIndex);
             }
+        }
+
+        [ClientRpc]
+        private void ParentDestroyedClientRpc()
+        {
+            TobogangMod.Logger.LogDebug("RandomSound destroyed");
+
+            Destroy(gameObject);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void SetParentServerRpc()
+        {
+            if (Parent != null)
+            {
+                SetParentClientRpc(Parent);
+            }
+        }
+
+        [ClientRpc]
+        public void SetParentClientRpc(NetworkObjectReference parentRef)
+        {
+            if (!parentRef.TryGet(out var parentNet))
+            {
+                TobogangMod.Logger.LogError("Failed to set RandomSound parent");
+                return;
+            }
+
+            Parent = parentNet.gameObject;
+            Instances[parentNet.NetworkObjectId] = this;
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -123,10 +185,19 @@ namespace TobogangMod.Scripts
             PlaySound(soundIndex);
         }
 
-        public void SetCrazy(bool crazy)
+        [ServerRpc(RequireOwnership = false)]
+        public void SetCrazyServerRpc(bool crazy)
         {
             MinTimeBetweenSounds = CRAZY_MIN_TIME;
             MaxTimeBetweenSounds = CRAZY_MAX_TIME;
+
+            SetCrazyClientRpc(crazy);
+        }
+
+        [ClientRpc]
+        private void SetCrazyClientRpc(bool crazy)
+        {
+            IsCrazy = crazy;
         }
 
         void PlaySound(int soundIndex)
