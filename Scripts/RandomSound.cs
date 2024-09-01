@@ -1,5 +1,4 @@
 ﻿using BepInEx;
-using LCSoundTool;
 using System.Collections.Generic;
 using System.IO;
 using Unity.Netcode;
@@ -15,7 +14,7 @@ namespace TobogangMod.Scripts
         private static readonly float CRAZY_MIN_TIME = 1f;
         private static readonly float CRAZY_MAX_TIME = 5f;
 
-        public static List<string> Sounds = [];
+        public static List<AudioClip> Sounds = [];
         public static GameObject NetworkPrefab = null!;
 
         public AudioSource AudioSource = null!;
@@ -33,10 +32,26 @@ namespace TobogangMod.Scripts
 
             if (Sounds.Count == 0)
             {
-                foreach (var file in Directory.GetFiles(Path.Combine(Paths.PluginPath, "TobogangMod/sounds")))
+                foreach (var assetName in TobogangMod.MainAssetBundle.GetAllAssetNames())
                 {
-                    Sounds.Add(Path.GetFileName(file));
+                    if (!assetName.ToLower().Contains("randomsounds"))
+                    {
+                        continue;
+                    }
+
+                    AudioClip clip = TobogangMod.MainAssetBundle.LoadAsset<AudioClip>(assetName);
+
+                    if (clip != null)
+                    {
+                        Sounds.Add(clip);
+                    }
+                    else
+                    {
+                        TobogangMod.Logger.LogDebug($"Failed to load sound {assetName}");
+                    }
                 }
+
+                TobogangMod.Logger.LogDebug($"Loaded {Sounds.Count} sounds");
             }
         }
 
@@ -130,7 +145,7 @@ namespace TobogangMod.Scripts
                 return;
             }
 
-            audioSourcePlayer.PlayOneShot(SoundTool.GetAudioClip("TobogangMod/sounds", Sounds[soundIndex]));
+            audioSourcePlayer.PlayOneShot(Sounds[soundIndex]);
         }
     }
 }

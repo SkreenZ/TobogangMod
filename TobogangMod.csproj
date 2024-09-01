@@ -65,9 +65,6 @@
       <Reference Include="UnityEngine">
         <HintPath>lib\UnityEngine.dll</HintPath>
       </Reference>
-      <Reference Include="LC_SoundTool">
-        <HintPath>lib\LC_SoundTool.dll</HintPath>
-      </Reference>
       <Reference Include="LethalLib">
         <HintPath>lib\LethalLib.dll</HintPath>
       </Reference>
@@ -93,6 +90,6 @@
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
       <Exec Command="netcode-patch &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')" />
-      <Exec Command="call postbuild.bat" />
+      <Exec Command="call postbuild.bat $(ConfigurationName)" />
     </Target>
 </Project>

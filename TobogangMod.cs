@@ -1,20 +1,16 @@
 using BepInEx;
 using BepInEx.Logging;
-using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
 using LobbyCompatibility.Attributes;
 using LobbyCompatibility.Enums;
-using LethalLib;
 using LethalLib.Modules;
 using TobogangMod.Scripts;
-using Unity.Netcode;
 using System.Reflection;
 using static LethalLib.Modules.ContentLoader;
 using System.Collections.Generic;
-using LethalLib.Extras;
 using TobogangMod.Scripts.Items;
-using NetworkPrefabs = LethalLib.Modules.NetworkPrefabs;
+using System.IO;
 
 namespace TobogangMod;
 
@@ -32,6 +28,8 @@ public class TobogangMod : BaseUnityPlugin
         public static readonly string CRAZY_TOBOBOT = "CrazyTobobot";
     }
 
+    public static readonly string ASSETS_PATH = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "TobogangMod");
+
     /* Instances */
 
     public static TobogangMod Instance { get; private set; } = null!;
@@ -47,9 +45,7 @@ public class TobogangMod : BaseUnityPlugin
         Instance = this;
         Logger = base.Logger;
 
-        var dllFolderPath = System.IO.Path.GetDirectoryName(Info.Location);
-        var assetBundleFilePath = System.IO.Path.Combine(dllFolderPath, "TobogangMod/tobogangasset");
-        MainAssetBundle = AssetBundle.LoadFromFile(assetBundleFilePath);
+        MainAssetBundle = AssetBundle.LoadFromFile(Path.Combine(ASSETS_PATH, "tobogangasset"));
 
         NetworkPrefab = (GameObject)MainAssetBundle.LoadAsset("NetworkHandler");
 
@@ -62,8 +58,6 @@ public class TobogangMod : BaseUnityPlugin
         Patch();
 
         NetcodePatcher();
-
-        GeTobogangItems();
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded !");
     }
@@ -115,7 +109,7 @@ public class TobogangMod : BaseUnityPlugin
         Logger.LogInfo("Registered items");
     }
 
-    public static TobogangItem[] GeTobogangItems()
+    public static TobogangItem[] GetTobogangItems()
     {
         List<TobogangItem> outItems = [];
 

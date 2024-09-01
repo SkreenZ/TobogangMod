@@ -1,0 +1,11 @@
+{
+    "name": "TobogangMod",
+    "version_number": "0.0.4",
+    "website_url": "https://github.com/SkreenZ/TobogangMod",
+    "description": "Oui c'est le ToboGang",
+    "dependencies": [
+        "BepInEx-BepInExPack-5.4.2100",
+        "Evaisa-LethalLib-0.16.1",
+        "BMX-LobbyCompatibility-1.2.0"
+    ]
+}

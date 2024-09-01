@@ -78,7 +78,7 @@ namespace TobogangMod.Patches
                 }
             }
 
-            foreach (var item in TobogangMod.GeTobogangItems())
+            foreach (var item in TobogangMod.GetTobogangItems())
             {
                 var node = ScriptableObject.CreateInstance<TerminalNode>();
                 node.clearPreviousText = true;
@@ -163,7 +163,7 @@ namespace TobogangMod.Patches
                 node.displayText =  "Items Tobogang\n";
                 node.displayText += "____________________________\n\n";
 
-                foreach (var item in TobogangMod.GeTobogangItems())
+                foreach (var item in TobogangMod.GetTobogangItems())
                 {
                     node.displayText += $"* {item.itemProperties.itemName}  //  {item.CoinguesPrice} coingues\n";
                 }

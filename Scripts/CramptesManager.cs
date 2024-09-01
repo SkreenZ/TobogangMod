@@ -1,5 +1,4 @@
 ﻿using GameNetcodeStuff;
-using LCSoundTool;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -150,7 +149,7 @@ namespace TobogangMod.Scripts
 
             _isProccing = true;
 
-            AudioClip clip = SoundTool.GetAudioClip("TobogangMod/sounds", RandomSound.Sounds[soundIndex]);
+            AudioClip clip = RandomSound.Sounds[soundIndex];
             CurrentCramptesPlayer.GetComponent<RandomSound>().AudioSource.PlayOneShot(clip);
             _clipTimer = clip.length;
         }
