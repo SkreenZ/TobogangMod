@@ -22,6 +22,7 @@ namespace TobogangMod.Patches
             foreach (var player in CoinguesManager.Instance.GetRegisteredPlayers())
             {
                 ES3.Save(prefix + "Coingues_" + player, CoinguesManager.Instance.GetCoingues(player), __instance.currentSaveFileName);
+                ES3.Save(prefix + "ClaimStreak_" + player, CoinguesManager.Instance.GetClaimStreak(player), __instance.currentSaveFileName);
             }
         }
     }

@@ -9,6 +9,7 @@ using TobogangMod.Scripts.Items;
 using Unity.Netcode;
 using UnityEngine;
 using static Unity.Audio.Handle;
+using NetworkManager = Unity.Netcode.NetworkManager;
 
 namespace TobogangMod.Patches
 {
@@ -43,6 +44,7 @@ namespace TobogangMod.Patches
         private static readonly TerminalNode COINGUES_NODE = ScriptableObject.CreateInstance<TerminalNode>();
         private static readonly TerminalNode TOBOGANG_NODE = ScriptableObject.CreateInstance<TerminalNode>();
         private static readonly TerminalNode CRAMPTES_NODE = ScriptableObject.CreateInstance<TerminalNode>();
+        private static readonly TerminalNode CLAIM_NODE = ScriptableObject.CreateInstance<TerminalNode>();
 #if DEBUG
         private static readonly TerminalNode MOTHERLODE_NODE = ScriptableObject.CreateInstance<TerminalNode>();
         private static readonly TerminalNode DAMAGE_NODE = ScriptableObject.CreateInstance<TerminalNode>();
@@ -56,8 +58,9 @@ namespace TobogangMod.Patches
 #endif
             { CRAMPTES_NODE, ["cramptes", "cramptés", "crampte", "crampté"] },
             { COINGUES_NODE, ["coingues", "coingue", "coingu", "coing", "coin"] },
-            { TOBOGANG_NODE, ["tobogang", "tobogan", "toboga", "tobog", "tobo"] }
-        };
+            { TOBOGANG_NODE, ["tobogang", "tobogan", "toboga", "tobog", "tobo"] },
+            { CLAIM_NODE,    ["claim"] }
+    };
 
         private static readonly Dictionary<string, ItemNode> ITEM_TERMINAL_NODES = new();
 
@@ -183,6 +186,30 @@ namespace TobogangMod.Patches
                 node.displayText = CramptesManager.Instance.CurrentCramptesPlayer != null
                     ? $"{CramptesManager.Instance.CurrentCramptesPlayer.playerUsername} a les cramptés."
                     : "Personne n'a les cramptés.";
+            }
+            else if (__result == CLAIM_NODE)
+            {
+                if (StartOfRound.Instance.inShipPhase)
+                {
+                    node.displayText = "Tu ne peux claim que quand le vaisseau a atterri.";
+                    node.playSyncedClip = (int)TerminalSounds.Error;
+                }
+                else
+                {
+                    var alreadyClaimed = CoinguesManager.Instance.HasClaimedToday(player);
+                    var streak = CoinguesManager.Instance.GetClaimStreak(player) + 1;
+
+                    CoinguesManager.Instance.ClaimServerRpc(player.NetworkObject);
+
+                    node.displayText = alreadyClaimed
+                        ? "Tu as déjà claim aujourd'hui. Tu perds 1 coingue (frais de dossier)."
+                        : $"{CoinguesManager.CLAIM_VALUE + streak} coingues obtenus. Streak : {streak + 1}";
+
+                    if (alreadyClaimed)
+                    {
+                        node.playSyncedClip = (int)TerminalSounds.Error;
+                    }
+                }
             }
             else if (itemNode.HasValue && currentlyBuyingItem == null)
             {

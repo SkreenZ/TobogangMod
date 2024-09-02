@@ -101,6 +101,7 @@ namespace TobogangMod.Patches
         private static void KillPlayerPostfix(CauseOfDeath causeOfDeath, PlayerControllerB __instance)
         {
             CoinguesManager.Instance.RemoveCoinguesServerRpc(__instance.NetworkObject, CoinguesManager.DEATH_MALUS);
+            CoinguesManager.Instance.SetClaimStreakServerRpc(__instance.NetworkObject, -1);
         }
     }
 }

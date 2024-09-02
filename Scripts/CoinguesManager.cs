@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using TobogangMod.Model;
 using TobogangMod.Patches;
@@ -13,6 +14,13 @@ namespace TobogangMod.Scripts
 {
     public class CoinguesManager : NetworkBehaviour
     {
+        private struct ClaimInfo
+        {
+            public bool ClaimedToday;
+            public int Streak;
+        }
+
+        public static readonly int CLAIM_VALUE = 10;
         public static readonly int DEATH_MALUS = 30;
         public static readonly int CRAMPTES_PROC_MALUS = 100;
         public static readonly float SCRAP_COINGUES_MULTIPLIER = 0.5f;
@@ -24,6 +32,7 @@ namespace TobogangMod.Scripts
         public List<PlayerControllerB> DeafenedPlayers { get; private set; } = [];
 
         private CoinguesStorage _coingues = new();
+        private Dictionary<string, ClaimInfo> _playerClaims = [];
 
         public static void Init()
         {
@@ -40,16 +49,26 @@ namespace TobogangMod.Scripts
         {
             if (IsServer)
             {
-                var prefix = TobogangMod.Instance.Info.Metadata.Name + "_Coingues_";
+                var coinguesPrefix = TobogangMod.Instance.Info.Metadata.Name + "_Coingues_";
+                var claimPrefix = TobogangMod.Instance.Info.Metadata.Name + "_ClaimStreak_";
 
                 foreach (var key in ES3.GetKeys(GameNetworkManager.Instance.currentSaveFileName))
                 {
-                    if (!key.StartsWith(prefix))
+                    if (key == null || (!key.StartsWith(coinguesPrefix) && !key.StartsWith(claimPrefix)))
                     {
                         continue;
                     }
 
-                    _coingues[key.Substring(prefix.Length)] = ES3.Load<int>(key, GameNetworkManager.Instance.currentSaveFileName, 0);
+                    if (key.StartsWith(coinguesPrefix))
+                    {
+                        _coingues[key.Substring(coinguesPrefix.Length)] = ES3.Load<int>(key, GameNetworkManager.Instance.currentSaveFileName, 0);
+                    }
+                    else if (key.StartsWith(claimPrefix))
+                    {
+                        var streak = ES3.Load<int>(key, GameNetworkManager.Instance.currentSaveFileName, 0);
+
+                        _playerClaims[key.Substring(claimPrefix.Length)] = new ClaimInfo { ClaimedToday = false, Streak = streak };
+                    }
                 }
 
                 TobogangMod.Logger.LogDebug($"Loaded coingues from save: {_coingues}");
@@ -64,6 +83,16 @@ namespace TobogangMod.Scripts
         private void SyncAllClientsServerRpc()
         {
             SyncAllClientsClientRpc(_coingues);
+            SyncClaimsServerRpc();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void SyncClaimsServerRpc()
+        {
+            foreach (var (key, value) in _playerClaims.ToDictionary(e => e.Key, e => e.Value))
+            {
+                SetPlayerClaimClientRpc(key, value.ClaimedToday, value.Streak);
+            }
         }
 
         [ClientRpc]
@@ -73,6 +102,16 @@ namespace TobogangMod.Scripts
 
 #if DEBUG
             TobogangMod.Logger.LogDebug($"CoinguesManager synced on client: {_coingues}");
+#endif
+        }
+
+        [ClientRpc]
+        private void SetPlayerClaimClientRpc(string playerId, bool claimedToday, int streak)
+        {
+            _playerClaims[playerId] = new ClaimInfo { ClaimedToday = claimedToday, Streak = streak };
+
+#if DEBUG
+            TobogangMod.Logger.LogDebug($"Set {playerId} claim info: {claimedToday}, {streak}");
 #endif
         }
 
@@ -281,6 +320,141 @@ namespace TobogangMod.Scripts
             }
 
             StartOfRound.Instance.UpdatePlayerVoiceEffects();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void ClaimServerRpc(NetworkObjectReference playerRef)
+        {
+            if (!playerRef.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            var player = playerNet.GetComponentInChildren<PlayerControllerB>();
+            var playerId = GetPlayerId(player);
+
+            var alreadyClaimed = _playerClaims.ContainsKey(playerId) && _playerClaims[playerId].ClaimedToday;
+
+            ClaimClientRpc(playerRef);
+
+            if (!alreadyClaimed)
+            {
+                AddCoinguesServerRpc(playerRef, CLAIM_VALUE + _playerClaims[playerId].Streak);
+            }
+            else
+            {
+                RemoveCoinguesServerRpc(player.NetworkObject, 1);
+                CramptesManager.Instance.SetCramptesPlayerServerRpc(player.NetworkObject);
+            }
+        }
+
+        [ClientRpc]
+        private void ClaimClientRpc(NetworkObjectReference playerRef)
+        {
+            if (!playerRef.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            var player = playerNet.GetComponentInChildren<PlayerControllerB>();
+            var playerId = GetPlayerId(player);
+
+            if (!_playerClaims.ContainsKey(playerId))
+            {
+                _playerClaims[playerId] = new ClaimInfo { ClaimedToday = true, Streak = 0 };
+            }
+            else
+            {
+                var claim = _playerClaims[playerId];
+                claim.ClaimedToday = true;
+                claim.Streak++;
+                _playerClaims[playerId] = claim;
+            }
+        }
+
+        [ServerRpc]
+        public void ResetClaimsServerRpc()
+        {
+            ResetClaimsClientRpc();
+        }
+
+        [ClientRpc]
+        private void ResetClaimsClientRpc()
+        {
+            foreach (var playerId in _playerClaims.Keys.ToList())
+            {
+                var claim = _playerClaims[playerId];
+
+                if (!claim.ClaimedToday)
+                {
+                    claim.Streak = -1;
+                }
+
+                claim.ClaimedToday = false;
+                _playerClaims[playerId] = claim;
+            }
+
+#if DEBUG
+            TobogangMod.Logger.LogDebug("Reset claims of the day");
+#endif
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SetClaimStreakServerRpc(NetworkObjectReference playerRef, int streak)
+        {
+            SetClaimStreakClientRpc(playerRef, streak);
+        }
+
+        [ClientRpc]
+        private void SetClaimStreakClientRpc(NetworkObjectReference playerRef, int streak)
+        {
+            if (!playerRef.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            var playerId = GetPlayerId(playerNet.GetComponentInChildren<PlayerControllerB>());
+
+            if (_playerClaims.ContainsKey(playerId))
+            {
+                var claim = _playerClaims[playerId];
+                claim.Streak = streak;
+                _playerClaims[playerId] = claim;
+            }
+            else
+            {
+                _playerClaims[playerId] = new ClaimInfo { ClaimedToday = false, Streak = streak };
+            }
+        }
+
+        public bool HasClaimedToday(PlayerControllerB player)
+        {
+            return HasClaimedToday(GetPlayerId(player));
+        }
+
+        public bool HasClaimedToday(string playerId)
+        {
+            if (!_playerClaims.ContainsKey(playerId))
+            {
+                return false;
+            }
+
+            return _playerClaims[playerId].ClaimedToday;
+        }
+
+        public int GetClaimStreak(PlayerControllerB player)
+        {
+            return GetClaimStreak(GetPlayerId(player));
+        }
+
+        public int GetClaimStreak(string playerId)
+        {
+            if (!_playerClaims.ContainsKey(playerId))
+            {
+                return -1;
+            }
+
+            return _playerClaims[playerId].Streak;
         }
 
         private static void LayoutPlayerIcons(PlayerControllerB player)

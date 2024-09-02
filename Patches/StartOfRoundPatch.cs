@@ -47,5 +47,16 @@ namespace TobogangMod.Patches
                 }
             }
         }
+
+        [HarmonyPatch(nameof(StartOfRound.StartGame)), HarmonyPostfix]
+        private static void StartGamePostfix(StartOfRound __instance)
+        {
+            TobogangMod.Logger.LogDebug("Starting a new game");
+
+            if (NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsHost)
+            {
+                CoinguesManager.Instance.ResetClaimsServerRpc();
+            }
+        }
     }
 }

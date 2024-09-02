@@ -98,8 +98,14 @@ namespace TobogangMod.Scripts
         {
             if (Random.Range(0f, 1f) <= CRAMPTES_CHANCE_ON_ITEM_IN_SHIP)
             {
-                SetCramptesPlayerClientRpc(0);
+                SetCramptesPlayerClientRpc(TobogangMod.NULL_OBJECT);
             }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SetCramptesPlayerServerRpc(NetworkObjectReference playerRef)
+        {
+            SetCramptesPlayerClientRpc(playerRef.NetworkObjectId);
         }
 
         [ClientRpc]
@@ -113,12 +119,7 @@ namespace TobogangMod.Scripts
             string lastCramptesPlayer = CurrentCramptesPlayer != null ? CurrentCramptesPlayer.playerUsername : "";
             var newCramptesPlayerNet = TobogangMod.TryGet(playerNetId);
 
-            if (newCramptesPlayerNet == null)
-            {
-                return;
-            }
-
-            CurrentCramptesPlayer = newCramptesPlayerNet.GetComponentInChildren<PlayerControllerB>();
+            CurrentCramptesPlayer = newCramptesPlayerNet != null ? newCramptesPlayerNet.GetComponentInChildren<PlayerControllerB>() : null;
             _currentProba = PROBA_INCREASE;
 
             if (CurrentCramptesPlayer != null)
@@ -176,7 +177,7 @@ namespace TobogangMod.Scripts
             FinishProcClientRpc(CurrentCramptesPlayer.NetworkObject);
             AddNoteToCramptesPlayerClientRpc("Cramptes time");
             CoinguesManager.Instance.RemoveCoinguesServerRpc(CurrentCramptesPlayer.NetworkObject, CoinguesManager.CRAMPTES_PROC_MALUS);
-            SetCramptesPlayerClientRpc(0, false);
+            SetCramptesPlayerClientRpc(TobogangMod.NULL_OBJECT, false);
         }
 
         [ClientRpc]
