@@ -14,11 +14,13 @@ namespace TobogangMod.Scripts
     {
         public static readonly int DEATH_MALUS = 30;
         public static readonly int CRAMPTES_PROC_MALUS = 100;
+        public static readonly float SCRAP_COINGUES_MULTIPLIER = 0.5f;
 
         public static CoinguesManager Instance { get; private set; }
         public static GameObject NetworkPrefab { get; private set; }
 
         public List<PlayerControllerB> MutedPlayers { get; private set; } = [];
+        public List<PlayerControllerB> DeafenedPlayers { get; private set; } = [];
 
         private CoinguesStorage _coingues = new();
 
@@ -30,14 +32,7 @@ namespace TobogangMod.Scripts
 
         void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                TobogangMod.Logger.LogError("Multiple CoinguesManager spawned!");
-            }
+            Instance = this;
         }
 
         void Start()
@@ -194,13 +189,13 @@ namespace TobogangMod.Scripts
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void MutePlayerServerRpc(NetworkObjectReference targetPlayerRef, NetworkObjectReference sourcePlayerRef)
+        public void MutePlayerServerRpc(NetworkObjectReference targetPlayerRef, ulong sourcePlayerRef, bool isMuted)
         {
-            MutePlayerClientRpc(targetPlayerRef, sourcePlayerRef);
+            MutePlayerClientRpc(targetPlayerRef, sourcePlayerRef, isMuted);
         }
 
         [ClientRpc]
-        private void MutePlayerClientRpc(NetworkObjectReference targetPlayerRef, NetworkObjectReference sourcePlayerRef)
+        private void MutePlayerClientRpc(NetworkObjectReference targetPlayerRef, ulong sourcePlayerRef, bool isMuted)
         {
             if (!targetPlayerRef.TryGet(out var playerNet))
             {
@@ -209,14 +204,27 @@ namespace TobogangMod.Scripts
 
             var player = playerNet.gameObject.GetComponent<PlayerControllerB>();
 
-            if (player != null)
+            if (player == null)
+            {
+                return;
+            }
+
+            if (isMuted)
             {
                 TobogangMod.Logger.LogDebug($"Muted {player.playerUsername}");
 
                 MutedPlayers.Add(player);
             }
+            else
+            {
+                TobogangMod.Logger.LogDebug($"Unmuted {player.playerUsername}");
 
-            if (player == StartOfRound.Instance.localPlayerController && sourcePlayerRef.TryGet(out var sourcePlayerNet))
+                MutedPlayers.Remove(player);
+            }
+
+            var sourcePlayerNet = TobogangMod.TryGet(sourcePlayerRef);
+
+            if (isMuted && player == StartOfRound.Instance.localPlayerController && sourcePlayerNet != null)
             {
                 HUDManager.Instance.DisplayGlobalNotification($"{sourcePlayerNet.gameObject.GetComponent<PlayerControllerB>().playerUsername} a utilise Ta gueule pour te mute pendant {Math.Round(TobogangTaGueule.MUTE_DURATION)} secondes");
             }
@@ -225,26 +233,44 @@ namespace TobogangMod.Scripts
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void UnmutePlayerServerRpc(NetworkObjectReference playerRef)
+        public void DeafenPlayerServerRpc(NetworkObjectReference targetPlayerRef, ulong sourcePlayerRef, bool isDeaf)
         {
-            UnmutePlayerClientRpc(playerRef);
+            DeafenPlayerClientRpc(targetPlayerRef, sourcePlayerRef, isDeaf);
         }
 
         [ClientRpc]
-        private void UnmutePlayerClientRpc(NetworkObjectReference playerRef)
+        private void DeafenPlayerClientRpc(NetworkObjectReference targetPlayerRef, ulong sourcePlayerRef, bool isDeaf)
         {
-            if (!playerRef.TryGet(out var playerNet))
+            if (!targetPlayerRef.TryGet(out var playerNet))
             {
                 return;
             }
 
             var player = playerNet.gameObject.GetComponent<PlayerControllerB>();
 
-            if (player != null)
+            if (player == null)
             {
-                TobogangMod.Logger.LogDebug($"Unmuted {player.playerUsername}");
+                return;
+            }
 
-                MutedPlayers.Remove(player);
+            if (isDeaf)
+            {
+                TobogangMod.Logger.LogDebug($"Deafened {player.playerUsername}");
+
+                DeafenedPlayers.Add(player);
+            }
+            else
+            {
+                TobogangMod.Logger.LogDebug($"Un-deafened {player.playerUsername}");
+
+                DeafenedPlayers.Remove(player);
+            }
+
+            var sourcePlayerNet = TobogangMod.TryGet(sourcePlayerRef);
+
+            if (isDeaf && player == StartOfRound.Instance.localPlayerController && sourcePlayerNet != null)
+            {
+                HUDManager.Instance.DisplayGlobalNotification($"{sourcePlayerNet.gameObject.GetComponent<PlayerControllerB>().playerUsername} a utilise RP Joel pour te rendre sourd pendant {Math.Round(TobogangRPJoel.DEAFEN_DURATION)} secondes");
             }
 
             StartOfRound.Instance.UpdatePlayerVoiceEffects();

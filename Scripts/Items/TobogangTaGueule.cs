@@ -35,28 +35,14 @@ namespace TobogangMod.Scripts
             }
 
             StartCoroutine(WaitAndUnmutePlayerCoroutine(targetPlayer));
-        }
-
-        protected override void ItemActivatedOnClient(GameObject targetPlayerOrEnemy, PlayerControllerB sourcePlayer)
-        {
-            var targetPlayer = targetPlayerOrEnemy.GetComponent<PlayerControllerB>();
-
-            if (targetPlayer == null || targetPlayer == StartOfRound.Instance.localPlayerController)
-            {
-                return;
-            }
-
-            CoinguesManager.Instance.MutePlayerServerRpc(targetPlayer.NetworkObject, sourcePlayer.NetworkObject);
+            CoinguesManager.Instance.MutePlayerServerRpc(targetPlayer.NetworkObject, sourcePlayer.NetworkObjectId, true);
         }
 
         private IEnumerator WaitAndUnmutePlayerCoroutine(PlayerControllerB player)
         {
             yield return new WaitForSeconds(MUTE_DURATION);
 
-            if (player != null)
-            {
-                CoinguesManager.Instance.UnmutePlayerServerRpc(player.NetworkObject);
-            }
+            CoinguesManager.Instance.MutePlayerServerRpc(player.NetworkObject, TobogangMod.NULL_OBJECT, false);
         }
     }
 }

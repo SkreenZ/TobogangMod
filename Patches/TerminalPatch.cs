@@ -53,8 +53,8 @@ namespace TobogangMod.Patches
 #if DEBUG
             { MOTHERLODE_NODE, ["motherlode"] },
             { DAMAGE_NODE, ["damage"] },
-            { CRAMPTES_NODE, ["cramptes", "cramptés", "crampte", "crampté"] },
 #endif
+            { CRAMPTES_NODE, ["cramptes", "cramptés", "crampte", "crampté"] },
             { COINGUES_NODE, ["coingues", "coingue", "coingu", "coing", "coin"] },
             { TOBOGANG_NODE, ["tobogang", "tobogan", "toboga", "tobog", "tobo"] }
         };
@@ -62,10 +62,20 @@ namespace TobogangMod.Patches
         private static readonly Dictionary<string, ItemNode> ITEM_TERMINAL_NODES = new();
 
         private static TobogangItem? currentlyBuyingItem;
+        private static bool _initialized = false;
 
         [HarmonyPatch(nameof(Terminal.Start)), HarmonyPostfix]
         private static void StartPostfix(Terminal __instance)
         {
+            currentlyBuyingItem = null;
+
+            if (_initialized)
+            {
+                return;
+            }
+
+            _initialized = true;
+
             foreach (var customNode in CUSTOM_TERMINAL_NODES)
             {
                 foreach (var word in customNode.Value)

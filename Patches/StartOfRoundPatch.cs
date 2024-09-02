@@ -41,7 +41,7 @@ namespace TobogangMod.Patches
             foreach (var player in __instance.allPlayerScripts)
             {
                 if (player != __instance.localPlayerController && player.voicePlayerState != null && 
-                    (CoinguesManager.Instance.MutedPlayers.Contains(player) || TobogangRPJoel.LocalPlayerIsDeaf))
+                    (CoinguesManager.Instance.MutedPlayers.Contains(player) || CoinguesManager.Instance.DeafenedPlayers.Contains(__instance.localPlayerController)))
                 {
                     player.voicePlayerState.Volume = 0f;
                 }

@@ -17,8 +17,6 @@ namespace TobogangMod.Scripts
 #else
             30f;
 #endif
-        public static bool LocalPlayerIsDeaf { get; private set; } = false;
-
         TobogangRPJoel()
         {
             TobogangItemId = TobogangMod.TobogangItems.RP_JOEL;
@@ -26,25 +24,23 @@ namespace TobogangMod.Scripts
             Keywords = ["rp joel", "joel", "rp joe", "rpjoel", "rpjoe", "rpj", "rp j"];
         }
 
-        protected override void ItemActivatedOnClient(GameObject targetPlayerOrEnemy, PlayerControllerB sourcePlayer)
+        protected override void ItemActivatedOnServer(GameObject targetPlayerOrEnemy, PlayerControllerB sourcePlayer)
         {
             var targetPlayer = targetPlayerOrEnemy.GetComponent<PlayerControllerB>();
 
-            if (targetPlayer != null && targetPlayer == StartOfRound.Instance.localPlayerController)
+            if (targetPlayer != null)
             {
-                LocalPlayerIsDeaf = true;
-                StartOfRound.Instance.UpdatePlayerVoiceEffects();
+                CoinguesManager.Instance.DeafenPlayerServerRpc(targetPlayer.NetworkObject, sourcePlayer.NetworkObjectId, true);
 
-                StartCoroutine(WaitAndUndeafenLocalPlayer());
+                StartCoroutine(WaitAndUndeafenPlayer(targetPlayer));
             }
         }
 
-        private IEnumerator WaitAndUndeafenLocalPlayer()
+        private IEnumerator WaitAndUndeafenPlayer(PlayerControllerB player)
         {
             yield return new WaitForSeconds(DEAFEN_DURATION);
 
-            LocalPlayerIsDeaf = false;
-            StartOfRound.Instance.UpdatePlayerVoiceEffects();
+            CoinguesManager.Instance.DeafenPlayerServerRpc(player.NetworkObject, TobogangMod.NULL_OBJECT, true);
         }
     }
 }

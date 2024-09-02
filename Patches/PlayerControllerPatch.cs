@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using System;
+using GameNetcodeStuff;
 using HarmonyLib;
 using TobogangMod.Scripts;
 using Unity.Netcode;
@@ -64,7 +65,7 @@ namespace TobogangMod.Patches
 #if DEBUG
                 TobogangMod.Logger.LogDebug($"{__instance.playerUsername} dropped in ship {gObject.itemProperties.itemName}");
 #endif
-                CoinguesManager.Instance.AddCoinguesServerRpc(__instance.NetworkObject, gObject.scrapValue);
+                CoinguesManager.Instance.AddCoinguesServerRpc(__instance.NetworkObject, (int)Math.Round(gObject.scrapValue * CoinguesManager.SCRAP_COINGUES_MULTIPLIER));
                 CramptesManager.Instance.TryLoseCramptesServerRpc();
             }
 

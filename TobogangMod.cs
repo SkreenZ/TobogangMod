@@ -11,6 +11,8 @@ using static LethalLib.Modules.ContentLoader;
 using System.Collections.Generic;
 using TobogangMod.Scripts.Items;
 using System.IO;
+using GameNetcodeStuff;
+using Unity.Netcode;
 
 namespace TobogangMod;
 
@@ -28,6 +30,7 @@ public class TobogangMod : BaseUnityPlugin
         public static readonly string CRAZY_TOBOBOT = "CrazyTobobot";
     }
 
+    public static readonly ulong NULL_OBJECT = ulong.MaxValue;
     public static readonly string ASSETS_PATH = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "TobogangMod");
 
     /* Instances */
@@ -148,6 +151,16 @@ public class TobogangMod : BaseUnityPlugin
         Harmony?.UnpatchSelf();
 
         Logger.LogDebug("Finished unpatching!");
+    }
+
+    public static NetworkObject? TryGet(ulong objectNetId)
+    {
+        if (objectNetId == NULL_OBJECT)
+        {
+            return null;
+        }
+
+        return NetworkManager.Singleton.SpawnManager.SpawnedObjects[objectNetId];
     }
 
     private static void NetcodePatcher()

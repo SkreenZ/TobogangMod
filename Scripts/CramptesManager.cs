@@ -33,14 +33,7 @@ namespace TobogangMod.Scripts
 
         void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                TobogangMod.Logger.LogError("Multiple CramptesManager spawned!");
-            }
+            Instance = this;
         }
 
         void Update()
@@ -118,8 +111,14 @@ namespace TobogangMod.Scripts
             }
 
             string lastCramptesPlayer = CurrentCramptesPlayer != null ? CurrentCramptesPlayer.playerUsername : "";
+            var newCramptesPlayerNet = TobogangMod.TryGet(playerNetId);
 
-            CurrentCramptesPlayer = playerNetId == 0 ? null : GetPlayer(playerNetId);
+            if (newCramptesPlayerNet == null)
+            {
+                return;
+            }
+
+            CurrentCramptesPlayer = newCramptesPlayerNet.GetComponentInChildren<PlayerControllerB>();
             _currentProba = PROBA_INCREASE;
 
             if (CurrentCramptesPlayer != null)
@@ -189,11 +188,6 @@ namespace TobogangMod.Scripts
             }
 
             Landmine.SpawnExplosion(player.transform.position + Vector3.up, true, 5.7f, 6f);
-        }
-
-        static PlayerControllerB GetPlayer(ulong playerNetId)
-        {
-            return NetworkManager.Singleton.SpawnManager.SpawnedObjects[playerNetId].GetComponent<PlayerControllerB>();
         }
     }
 }
