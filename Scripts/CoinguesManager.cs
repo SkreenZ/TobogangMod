@@ -187,6 +187,10 @@ namespace TobogangMod.Scripts
             var playerController = playerNetworkObject.gameObject.GetComponent<PlayerControllerB>();
 
             _coingues[GetPlayerId(playerController)] = Math.Max(newCoingues, 0);
+
+#if DEBUG
+            TobogangMod.Logger.LogDebug($"{playerController.playerUsername} now has {_coingues[GetPlayerId(playerController)]} coingues");
+#endif
         }
 
         [ServerRpc(RequireOwnership = false)]

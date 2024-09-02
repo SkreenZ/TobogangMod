@@ -52,6 +52,13 @@ namespace TobogangMod.Patches
         private static bool SetItemInElevatorPrefix(bool droppedInShipRoom, bool droppedInElevator,
             GrabbableObject gObject, PlayerControllerB __instance)
         {
+            bool isServer = NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer;
+
+            if (!isServer)
+            {
+                return true;
+            }
+
             if (droppedInShipRoom && gObject.itemProperties.isScrap && gObject.scrapValue > 0 && !gObject.scrapPersistedThroughRounds && !RoundManager.Instance.scrapCollectedThisRound.Contains(gObject))
             {
 #if DEBUG
