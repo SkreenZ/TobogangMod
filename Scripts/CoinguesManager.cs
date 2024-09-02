@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using TobogangMod.Model;
+using TobogangMod.Patches;
 using Unity.Netcode;
 using UnityEngine;
 using static LethalLib.Modules.ContentLoader;
@@ -204,7 +205,7 @@ namespace TobogangMod.Scripts
 
             var player = playerNet.gameObject.GetComponent<PlayerControllerB>();
 
-            if (player == null)
+            if (player == null || (isMuted && MutedPlayers.Contains(player)))
             {
                 return;
             }
@@ -221,6 +222,9 @@ namespace TobogangMod.Scripts
 
                 MutedPlayers.Remove(player);
             }
+
+            player.usernameCanvas.transform.Find(PlayerControllerPatch.MUTE_ICON).gameObject.SetActive(isMuted);
+            LayoutPlayerIcons(player);
 
             var sourcePlayerNet = TobogangMod.TryGet(sourcePlayerRef);
 
@@ -248,7 +252,7 @@ namespace TobogangMod.Scripts
 
             var player = playerNet.gameObject.GetComponent<PlayerControllerB>();
 
-            if (player == null)
+            if (player == null || (isDeaf && DeafenedPlayers.Contains(player)))
             {
                 return;
             }
@@ -266,6 +270,9 @@ namespace TobogangMod.Scripts
                 DeafenedPlayers.Remove(player);
             }
 
+            player.usernameCanvas.transform.Find(PlayerControllerPatch.DEAF_ICON).gameObject.SetActive(isDeaf);
+            LayoutPlayerIcons(player);
+
             var sourcePlayerNet = TobogangMod.TryGet(sourcePlayerRef);
 
             if (isDeaf && player == StartOfRound.Instance.localPlayerController && sourcePlayerNet != null)
@@ -274,6 +281,25 @@ namespace TobogangMod.Scripts
             }
 
             StartOfRound.Instance.UpdatePlayerVoiceEffects();
+        }
+
+        private static void LayoutPlayerIcons(PlayerControllerB player)
+        {
+            const float offset = 40f;
+
+            var muteIcon = player.usernameCanvas.transform.Find(PlayerControllerPatch.MUTE_ICON).gameObject;
+            var deafIcon = player.usernameCanvas.transform.Find(PlayerControllerPatch.DEAF_ICON).gameObject;
+
+            var mutePos = muteIcon.GetComponent<RectTransform>().localPosition;
+            var deafPos = deafIcon.GetComponent<RectTransform>().localPosition;
+
+            var useOffset = muteIcon.activeSelf && deafIcon.activeSelf;
+
+            mutePos.x = useOffset ? -offset : 0f;
+            deafPos.x = useOffset ?  offset : 0f;
+
+            muteIcon.GetComponent<RectTransform>().localPosition = mutePos;
+            deafIcon.GetComponent<RectTransform>().localPosition = deafPos;
         }
     }
 }

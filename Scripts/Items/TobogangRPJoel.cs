@@ -40,7 +40,7 @@ namespace TobogangMod.Scripts
         {
             yield return new WaitForSeconds(DEAFEN_DURATION);
 
-            CoinguesManager.Instance.DeafenPlayerServerRpc(player.NetworkObject, TobogangMod.NULL_OBJECT, true);
+            CoinguesManager.Instance.DeafenPlayerServerRpc(player.NetworkObject, TobogangMod.NULL_OBJECT, false);
         }
     }
 }

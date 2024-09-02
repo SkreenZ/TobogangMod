@@ -1,15 +1,20 @@
 ﻿using System;
+using System.Collections.Generic;
 using GameNetcodeStuff;
 using HarmonyLib;
 using TobogangMod.Scripts;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace TobogangMod.Patches
 {
     [HarmonyPatch(typeof(PlayerControllerB))]
     public class PlayerControllerPatch
     {
+        public static readonly string MUTE_ICON = "TobogangMutedIcon";
+        public static readonly string DEAF_ICON = "TobogangDeafenedIcon";
+
         [HarmonyPatch(nameof(PlayerControllerB.Start))]
         [HarmonyPostfix]
         private static void StartPostfix(PlayerControllerB __instance)
@@ -24,6 +29,26 @@ namespace TobogangMod.Patches
 
                 randomSound.SetParentClientRpc(__instance.NetworkObject);
                 randomSound.SetActiveServerRpc(false);
+            }
+
+            foreach (var icon in new List<string>{ MUTE_ICON, DEAF_ICON })
+            {
+                GameObject imgObject = new GameObject(icon);
+                var canvas = __instance.usernameCanvas;
+
+                RectTransform trans = imgObject.AddComponent<RectTransform>();
+                trans.transform.SetParent(canvas.transform);
+                trans.localScale = Vector3.one;
+                trans.localRotation = Quaternion.identity;
+                trans.anchoredPosition = new Vector2(0f, 0f);
+                trans.sizeDelta = new Vector2(40, 40);
+                trans.localPosition = new Vector3(0f, 50f, 0f);
+
+                Image image = imgObject.AddComponent<Image>();
+                image.sprite = TobogangMod.MainAssetBundle.LoadAsset<Sprite>($"Assets/CustomAssets/Images/{icon}.png");
+                imgObject.transform.SetParent(canvas.transform);
+
+                imgObject.SetActive(false);
             }
         }
 
