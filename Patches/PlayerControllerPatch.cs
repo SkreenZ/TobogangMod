@@ -29,6 +29,9 @@ namespace TobogangMod.Patches
         [HarmonyPatch(nameof(PlayerControllerB.Update)), HarmonyPostfix]
         private static void UpdatePostfix(PlayerControllerB __instance)
         {
+#if DEBUG
+            __instance.sprintMeter = 1f;
+#endif
         }
 
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer)), HarmonyPostfix]
