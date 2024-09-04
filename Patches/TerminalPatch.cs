@@ -194,6 +194,11 @@ namespace TobogangMod.Patches
                     node.displayText = "Tu ne peux claim que quand le vaisseau a atterri.";
                     node.playSyncedClip = (int)TerminalSounds.Error;
                 }
+                else if (RoundManager.Instance.timeScript.currentDayTime < CoinguesManager.CLAIM_TIME)
+                {
+                    node.displayText = "Tu ne peux claim qu'à partir de 12:00.";
+                    node.playSyncedClip = (int)TerminalSounds.Error;
+                }
                 else
                 {
                     var alreadyClaimed = CoinguesManager.Instance.HasClaimedToday(player);
@@ -203,7 +208,7 @@ namespace TobogangMod.Patches
 
                     node.displayText = alreadyClaimed
                         ? "Tu as déjà claim aujourd'hui. Tu perds 1 coingue (frais de dossier)."
-                        : $"{CoinguesManager.CLAIM_VALUE + streak} coingues obtenus. Streak : {streak + 1}";
+                        : $"[{streak + 1}] {CoinguesManager.CLAIM_VALUE + streak} coingues obtenus.";
 
                     if (alreadyClaimed)
                     {
@@ -273,6 +278,13 @@ namespace TobogangMod.Patches
         private static void PlayTerminalAudioServerRpcPostfix(int clipIndex)
         {
             TobogangMod.Logger.LogDebug($"Played terminal audio index {clipIndex}");
+        }
+
+        [HarmonyPatch(nameof(Terminal.Update)), HarmonyPostfix]
+        private static void UpdatePostfix(Terminal __instance)
+        {
+            __instance.groupCredits = 9999;
+            RoundManager.Instance.timeScript.quotaFulfilled = 9999;
         }
 #endif
     }

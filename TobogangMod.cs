@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using TobogangMod.Scripts.Items;
 using System.IO;
 using GameNetcodeStuff;
+using TobogangMod.Patches;
 using Unity.Netcode;
 
 namespace TobogangMod;
@@ -70,6 +71,7 @@ public class TobogangMod : BaseUnityPlugin
         RandomSound.Init();
         CramptesManager.Init();
         CoinguesManager.Init();
+        TVScriptPatch.Load();
     }
 
     internal static void Patch()

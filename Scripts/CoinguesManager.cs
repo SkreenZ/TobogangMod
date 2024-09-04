@@ -8,6 +8,7 @@ using TobogangMod.Model;
 using TobogangMod.Patches;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 using static LethalLib.Modules.ContentLoader;
 
 namespace TobogangMod.Scripts
@@ -24,6 +25,7 @@ namespace TobogangMod.Scripts
         public static readonly int DEATH_MALUS = 30;
         public static readonly int CRAMPTES_PROC_MALUS = 100;
         public static readonly float SCRAP_COINGUES_MULTIPLIER = 0.5f;
+        public static readonly float CLAIM_TIME = 360f; // 12 A.M
 
         public static CoinguesManager Instance { get; private set; }
         public static GameObject NetworkPrefab { get; private set; }
@@ -325,7 +327,7 @@ namespace TobogangMod.Scripts
         [ServerRpc(RequireOwnership = false)]
         public void ClaimServerRpc(NetworkObjectReference playerRef)
         {
-            if (!playerRef.TryGet(out var playerNet))
+            if (!playerRef.TryGet(out var playerNet) || RoundManager.Instance.timeScript.currentDayTime < CLAIM_TIME)
             {
                 return;
             }
