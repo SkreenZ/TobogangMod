@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Discord;
 using GameNetcodeStuff;
@@ -48,6 +49,7 @@ namespace TobogangMod.Patches
 #if DEBUG
         private static readonly TerminalNode MOTHERLODE_NODE = ScriptableObject.CreateInstance<TerminalNode>();
         private static readonly TerminalNode DAMAGE_NODE = ScriptableObject.CreateInstance<TerminalNode>();
+        private static readonly TerminalNode FINISH_BET_NODE = ScriptableObject.CreateInstance<TerminalNode>();
 #endif
 
         private static readonly Dictionary<TerminalNode, List<string>> CUSTOM_TERMINAL_NODES = new()
@@ -55,6 +57,7 @@ namespace TobogangMod.Patches
 #if DEBUG
             { MOTHERLODE_NODE, ["motherlode"] },
             { DAMAGE_NODE, ["damage"] },
+            { FINISH_BET_NODE, ["finishbet"] },
 #endif
             { CRAMPTES_NODE, ["cramptes", "cramptés", "crampte", "crampté"] },
             { COINGUES_NODE, ["coingues", "coingue", "coingu", "coing", "coin"] },
@@ -145,6 +148,7 @@ namespace TobogangMod.Patches
 
             string s = __instance.screenText.text.Substring(__instance.screenText.text.Length - __instance.textAdded);
             s = __instance.RemovePunctuation(s);
+            var args = s.Split(' ');
 
             if (currentlyBuyingItem != null)
             {
@@ -216,6 +220,61 @@ namespace TobogangMod.Patches
                     }
                 }
             }
+            else if (args[0] == "bet")
+            {
+                var activeBet = CoinguesManager.Instance.GetPlayerBet(player);
+                TobogangMod.Logger.LogDebug(RoundManager.Instance.timeScript.daysUntilDeadline);
+
+                if (activeBet != null)
+                {
+                    var targetBetPlayer = TobogangMod.TryGet(activeBet.Value.PlayerNetId);
+                    string targetBetPlayerName = targetBetPlayer != null
+                        ? targetBetPlayer.GetComponentInChildren<PlayerControllerB>().playerUsername
+                        : "<inconnu>";
+
+                    node.displayText = $"Tu as déjà un bet actif : {activeBet.Value.Amount} coingue{(activeBet.Value.Amount > 1 ? "s" : "")} sur {targetBetPlayerName}";
+                    node.playSyncedClip = (int)TerminalSounds.Error;
+                }
+                else if (args.Length != 3 || !uint.TryParse(args[2], out var amount) || amount <= 0)
+                {
+                    node.displayText = "Permet de parier sur le joueur le plus rentable sur un shift.\nUtilisation: bet [joueur] [nb de coingues à parier]";
+                    node.playSyncedClip = (int)TerminalSounds.Error;
+                }
+                else if (RoundManager.Instance.timeScript.daysUntilDeadline != 3)
+                {
+                    node.displayText = "Tu ne peux bet que pendant le premier jour du shift.";
+                }
+                else
+                {
+                    PlayerControllerB? betPlayer = null;
+
+                    foreach (var p in StartOfRound.Instance.allPlayerScripts)
+                    {
+                        if (__instance.RemovePunctuation(p.playerUsername.Replace(" ", "")) == args[1])
+                        {
+                            betPlayer = p;
+                            break;
+                        }
+                    }
+
+                    if (betPlayer == null)
+                    {
+                        node.displayText = $"Joueur inconnu : {args[1]}";
+                        node.playSyncedClip = (int)TerminalSounds.Error;
+                    }
+                    else if (CoinguesManager.Instance.GetCoingues(player) < amount)
+                    {
+                        node.displayText = "Tu n'as pas assez de coingues.";
+                        node.playSyncedClip = (int)TerminalSounds.Error;
+                    }
+                    else
+                    {
+                        CoinguesManager.Instance.SetPlayerBetServerRpc(player.NetworkObject, betPlayer.NetworkObject, amount);
+
+                        node.displayText = $"{amount} coingues pariés sur {betPlayer.playerUsername}";
+                    }
+                }
+            }
             else if (itemNode.HasValue && currentlyBuyingItem == null)
             {
                 currentlyBuyingItem = itemNode.Value.item;
@@ -231,6 +290,12 @@ namespace TobogangMod.Patches
             {
                 player.DamagePlayer(1);
                 node.displayText = $"1 de dégat infligé";
+            }
+            else if (__result == FINISH_BET_NODE)
+            {
+                node.displayText = "Finish bet";
+                CoinguesManager.Instance.PlayerProfits[CoinguesManager.GetPlayerId(player)] = 1000;
+                CoinguesManager.Instance.FinishBetcoingueServerRpc();
             }
 #endif
             else
@@ -284,7 +349,6 @@ namespace TobogangMod.Patches
         private static void UpdatePostfix(Terminal __instance)
         {
             __instance.groupCredits = 9999;
-            RoundManager.Instance.timeScript.quotaFulfilled = 9999;
         }
 #endif
     }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using GameNetcodeStuff;
 using HarmonyLib;
+using TMPro;
 using TobogangMod.Scripts;
 using Unity.Netcode;
 using UnityEngine;
@@ -14,12 +15,38 @@ namespace TobogangMod.Patches
     {
         public static readonly string MUTE_ICON = "TobogangMutedIcon";
         public static readonly string DEAF_ICON = "TobogangDeafenedIcon";
+        public static Canvas LocalPlayerCanvas { get; private set; } = null!;
 
         [HarmonyPatch(nameof(PlayerControllerB.Start))]
         [HarmonyPostfix]
         private static void StartPostfix(PlayerControllerB __instance)
         {
             TobogangMod.Logger.LogDebug($"Player steam id: {__instance.playerSteamId}");
+
+            if (LocalPlayerCanvas == null)
+            {
+                TobogangMod.Logger.LogDebug("Spawning local player canvas");
+                LocalPlayerCanvas = GameObject.Instantiate(TobogangMod.MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/TobogangCanvas.prefab")).GetComponent<Canvas>();
+                LocalPlayerCanvas.worldCamera = Camera.main;
+
+                var betcoingue = LocalPlayerCanvas.transform.Find("BetcoingueResult");
+                var betcoingueTitle = betcoingue.transform.Find("Header/Title");
+                var betcoinguePlayer = betcoingue.transform.Find("Header/PlayerName");
+                betcoingueTitle.gameObject.GetComponent<TextMeshProUGUI>().font = HUDManager.Instance.newProfitQuotaText.font;
+                betcoinguePlayer.gameObject.GetComponent<TextMeshProUGUI>().font = HUDManager.Instance.newProfitQuotaText.font;
+                betcoingue.transform.Find("NoBet").gameObject.GetComponent<TextMeshProUGUI>().font = HUDManager.Instance.newProfitQuotaText.font;
+                betcoinguePlayer.gameObject.SetActive(false);
+
+                for (int i = 0; i < 10; i++)
+                {
+                    betcoingue.transform.Find($"Content/Player{i}/Name").GetComponent<TextMeshProUGUI>().font = HUDManager.Instance.newProfitQuotaText.font;
+                    betcoingue.transform.Find($"Content/Player{i}/Amount").GetComponent<TextMeshProUGUI>().font = HUDManager.Instance.newProfitQuotaText.font;
+                    betcoingue.transform.Find($"Content/Player{i}/Coingues").GetComponent<TextMeshProUGUI>().font = HUDManager.Instance.newProfitQuotaText.font;
+                    betcoingue.transform.Find($"Content/Player{i}").gameObject.SetActive(false);
+                }
+
+                LocalPlayerCanvas.gameObject.SetActive(false);
+            }
 
             if (NetworkManager.Singleton.IsServer)
             {

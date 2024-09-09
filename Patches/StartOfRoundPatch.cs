@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using System.Collections.Generic;
+using HarmonyLib;
 using TobogangMod.Scripts;
 using Unity.Netcode;
 using UnityEngine;
@@ -56,6 +57,35 @@ namespace TobogangMod.Patches
             if (NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsHost)
             {
                 CoinguesManager.Instance.ResetClaimsServerRpc();
+            }
+        }
+
+        [HarmonyPatch(nameof(StartOfRound.PassTimeToNextDay)), HarmonyPostfix]
+        private static void PassTimeToNextDayPostfix(StartOfRound __instance)
+        {
+            if (!NetworkManager.Singleton.IsServer && !NetworkManager.Singleton.IsHost)
+            {
+                return;
+            }
+
+            TobogangMod.Logger.LogDebug($"PassTimeToNextDayPostfix, remaining: {TimeOfDay.Instance.daysUntilDeadline}");
+
+            for (int i = 0; i < __instance.allPlayerScripts.Length; ++i)
+            {
+                var profit = __instance.gameStats.allPlayerStats[i].profitable;
+                TobogangMod.Logger.LogDebug($"Player {i} profit this round: {profit}");
+
+                var playerId = CoinguesManager.GetPlayerId(__instance.allPlayerScripts[i]);
+                var playerProfit = CoinguesManager.Instance.PlayerProfits.GetValueOrDefault(playerId, 0);
+
+                CoinguesManager.Instance.PlayerProfits[playerId] = playerProfit + profit;
+                TobogangMod.Logger.LogDebug($"Player {i} total profit: {CoinguesManager.Instance.PlayerProfits[playerId]}");
+            }
+
+            if (TimeOfDay.Instance.daysUntilDeadline == 0)
+            {
+                TobogangMod.Logger.LogDebug("Finishing betcoingues");
+                CoinguesManager.Instance.FinishBetcoingueServerRpc();
             }
         }
     }

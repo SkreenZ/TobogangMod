@@ -34,6 +34,9 @@ public class TobogangMod : BaseUnityPlugin
     public static readonly ulong NULL_OBJECT = ulong.MaxValue;
     public static readonly string ASSETS_PATH = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "TobogangMod");
 
+    public static AudioClip DrumRoll { get; private set; } = null!;
+    public static AudioClip PartyHorn { get; private set; } = null!;
+
     /* Instances */
 
     public static TobogangMod Instance { get; private set; } = null!;
@@ -51,7 +54,9 @@ public class TobogangMod : BaseUnityPlugin
 
         MainAssetBundle = AssetBundle.LoadFromFile(Path.Combine(ASSETS_PATH, "tobogangasset"));
 
-        NetworkPrefab = (GameObject)MainAssetBundle.LoadAsset("NetworkHandler");
+        NetworkPrefab = MainAssetBundle.LoadAsset<GameObject>("NetworkHandler");
+        DrumRoll = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/drum_roll.mp3");
+        PartyHorn = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/party_horn.mp3");
 
         ContentLoader = new ContentLoader(Instance.Info, MainAssetBundle, (content, prefab) => {
             Prefabs.Add(content.ID, prefab);

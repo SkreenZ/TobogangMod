@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TMPro;
 using TobogangMod.Model;
 using TobogangMod.Patches;
 using Unity.Netcode;
@@ -21,6 +22,12 @@ namespace TobogangMod.Scripts
             public int Streak;
         }
 
+        public struct BetInfo
+        {
+            public ulong PlayerNetId;
+            public uint Amount;
+        }
+
         public static readonly int CLAIM_VALUE = 10;
         public static readonly int DEATH_MALUS = 30;
         public static readonly int CRAMPTES_PROC_MALUS = 100;
@@ -35,6 +42,8 @@ namespace TobogangMod.Scripts
 
         private CoinguesStorage _coingues = new();
         private Dictionary<string, ClaimInfo> _playerClaims = [];
+        private Dictionary<string, BetInfo> _playerBets = [];
+        public Dictionary<string, int> PlayerProfits = [];
 
         public static void Init()
         {
@@ -85,15 +94,15 @@ namespace TobogangMod.Scripts
         private void SyncAllClientsServerRpc()
         {
             SyncAllClientsClientRpc(_coingues);
-            SyncClaimsServerRpc();
-        }
 
-        [ServerRpc(RequireOwnership = false)]
-        private void SyncClaimsServerRpc()
-        {
             foreach (var (key, value) in _playerClaims.ToDictionary(e => e.Key, e => e.Value))
             {
                 SetPlayerClaimClientRpc(key, value.ClaimedToday, value.Streak);
+            }
+
+            foreach (var (key, value) in _playerBets.ToDictionary(e => e.Key, e => e.Value))
+            {
+                SetPlayerBetClientRpc(key, value.PlayerNetId, value.Amount);
             }
         }
 
@@ -115,6 +124,158 @@ namespace TobogangMod.Scripts
 #if DEBUG
             TobogangMod.Logger.LogDebug($"Set {playerId} claim info: {claimedToday}, {streak}");
 #endif
+        }
+
+        [ClientRpc]
+        private void SetPlayerBetClientRpc(string playerId, ulong betPlayerNetId, uint amount)
+        {
+            _playerBets[playerId] = new BetInfo { PlayerNetId = betPlayerNetId, Amount = amount };
+
+#if DEBUG
+            TobogangMod.Logger.LogDebug($"Set {playerId} bet info: {betPlayerNetId}, {amount}");
+#endif
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SetPlayerBetServerRpc(NetworkObjectReference player, NetworkObjectReference targetPlayer, uint betAmount)
+        {
+            if (!player.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            var playerId = GetPlayerId(playerNet.GetComponentInChildren<PlayerControllerB>());
+
+            if (_playerBets.ContainsKey(playerId) || GetCoingues(playerId) < betAmount)
+            {
+                return;
+            }
+
+            RemoveCoinguesServerRpc(player, (int)betAmount);
+
+            SetPlayerBetClientRpc(playerId, targetPlayer.NetworkObjectId, betAmount);
+        }
+
+        [ServerRpc]
+        public void FinishBetcoingueServerRpc()
+        {
+            string? mostProfitablePlayer = null;
+            int maxProfit = 0;
+
+            foreach (var (playerId, profit) in PlayerProfits)
+            {
+                if (profit > maxProfit)
+                {
+                    mostProfitablePlayer = playerId;
+                    maxProfit = profit;
+                }
+            }
+
+            StartCoroutine(WaitAndFinishBet(mostProfitablePlayer));
+        }
+
+        private IEnumerator WaitAndFinishBet(string? mostProfitablePlayer)
+        {
+            yield return new WaitForSeconds(5f);
+
+            foreach (var (playerId, bet) in _playerBets)
+            {
+                if (mostProfitablePlayer != null && bet.PlayerNetId == GetPlayer(mostProfitablePlayer)?.NetworkObjectId)
+                {
+                    AddCoinguesServerRpc(GetPlayer(playerId)?.NetworkObject, (int)bet.Amount * _playerBets.Count);
+                }
+            }
+
+            FinishBetcoingueClientRpc(mostProfitablePlayer ?? "");
+        }
+
+        [ClientRpc]
+        private void FinishBetcoingueClientRpc(string winningPlayerId)
+        {
+            StartCoroutine(FinishBetcoingueCoroutine(winningPlayerId));
+        }
+
+        private IEnumerator FinishBetcoingueCoroutine(string winningPlayerId)
+        {
+            var winningPlayer = GetPlayer(winningPlayerId);
+
+            PlayerControllerPatch.LocalPlayerCanvas.transform.Find($"BetcoingueResult/NoBet").gameObject.SetActive(false);
+
+            var playerNameText = PlayerControllerPatch.LocalPlayerCanvas.transform.Find("BetcoingueResult/Header/PlayerName").gameObject.GetComponent<TextMeshProUGUI>();
+            playerNameText.gameObject.SetActive(false);
+            playerNameText.text = winningPlayer != null ? winningPlayer.playerUsername : "Personne !";
+
+            for (int i = 0; i < 10; i++)
+            {
+                PlayerControllerPatch.LocalPlayerCanvas.transform.Find($"BetcoingueResult/Content/Player{i}").gameObject.SetActive(false);
+            }
+
+            PlayerControllerPatch.LocalPlayerCanvas.gameObject.SetActive(true);
+            HUDManager.Instance.UIAudio.PlayOneShot(TobogangMod.DrumRoll);
+
+            yield return new WaitForSeconds(TobogangMod.DrumRoll.length);
+
+            playerNameText.gameObject.SetActive(true);
+            HUDManager.Instance.UIAudio.PlayOneShot(TobogangMod.PartyHorn);
+
+            yield return new WaitForSeconds(1.5f);
+
+            if (_playerBets.Count == 0)
+            {
+                PlayerControllerPatch.LocalPlayerCanvas.transform.Find($"BetcoingueResult/NoBet").gameObject.SetActive(true);
+            }
+
+            for (int i = 0; i < _playerBets.Count; i++)
+            {
+                if (i >= 10)
+                {
+                    break;
+                }
+
+                var player = GetPlayer(_playerBets.Keys.ToArray()[i]);
+                PlayerControllerPatch.LocalPlayerCanvas.transform.Find($"BetcoingueResult/Content/Player{i}/Name").GetComponent<TextMeshProUGUI>().text = player.playerUsername;
+                var bet = _playerBets.Values.ToArray()[i];
+                var isWin = winningPlayer != null && bet.PlayerNetId == winningPlayer.NetworkObjectId;
+                var winOrLoseAmount = isWin ? bet.Amount * _playerBets.Count : bet.Amount;
+                PlayerControllerPatch.LocalPlayerCanvas.transform.Find($"BetcoingueResult/Content/Player{i}/Amount").GetComponent<TextMeshProUGUI>().text = $"{(isWin ? "+" : "-")}{winOrLoseAmount}";
+
+                PlayerControllerPatch.LocalPlayerCanvas.transform.Find($"BetcoingueResult/Content/Player{i}").gameObject.SetActive(true);
+
+                yield return new WaitForSeconds(1.5f);
+            }
+
+            yield return new WaitForSeconds(7.5f);
+
+            PlayerControllerPatch.LocalPlayerCanvas.gameObject.SetActive(false);
+
+            if (IsServer)
+            {
+                ClearAllBetsClientRpc();
+            }
+        }
+
+        public BetInfo? GetPlayerBet(PlayerControllerB player)
+        {
+            var playerId = GetPlayerId(player);
+
+            if (!_playerBets.TryGetValue(playerId, out var bet))
+            {
+                return null;
+            }
+
+            return bet;
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void ClearAllBetsServerRpc()
+        {
+            ClearAllBetsClientRpc();
+        }
+
+        [ClientRpc]
+        private void ClearAllBetsClientRpc()
+        {
+            _playerBets.Clear();
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -170,6 +331,19 @@ namespace TobogangMod.Scripts
         public static string GetPlayerId(PlayerControllerB player)
         {
             return player.playerSteamId != 0 ? player.playerSteamId.ToString() : player.playerUsername;
+        }
+
+        public static PlayerControllerB? GetPlayer(string playerId)
+        {
+            foreach (var player in StartOfRound.Instance.allPlayerScripts)
+            {
+                if (player.playerUsername == playerId || (ulong.TryParse(playerId, out var steamId) && steamId == player.playerSteamId))
+                {
+                    return player;
+                }
+            }
+
+            return null;
         }
 
         public int GetCoingues(PlayerControllerB player)
