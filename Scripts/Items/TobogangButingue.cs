@@ -64,8 +64,6 @@ namespace TobogangMod.Scripts.Items
             var confetti = GameObject.Instantiate(TobogangMod.ConfettiPrefab, gameObject.transform.position, Quaternion.identity);
             confetti.GetComponent<NetworkObject>().Spawn();
 
-            StartCoroutine(WaitAndDestroyConfetti(confetti));
-
             var loot = GetRandomLoot();
             TobogangMod.Logger.LogDebug($"Loot: {loot}");
 
@@ -126,7 +124,7 @@ namespace TobogangMod.Scripts.Items
                 case Loot.InstantCramptes:
                 {
                     CramptesManager.Instance.SetCramptesPlayerServerRpc(player.NetworkObjectId);
-                    CramptesManager.Instance.ProcCramptesServerRpc();
+                    CramptesManager.Instance.ProcCramptesServerRpc(true);
                     break;
                 }
 
@@ -135,12 +133,6 @@ namespace TobogangMod.Scripts.Items
             }
 
             gameObject.GetComponent<NetworkObject>().Despawn();
-        }
-
-        private IEnumerator WaitAndDestroyConfetti(GameObject confetti)
-        {
-            yield return new WaitForSeconds(5f);
-            confetti.GetComponent<NetworkObject>().Despawn();
         }
 
         private static Loot GetRandomLoot()

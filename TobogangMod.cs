@@ -65,6 +65,7 @@ public class TobogangMod : BaseUnityPlugin
         ConfettiClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/confetti.mp3");
 
         ConfettiPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/ConfettiPrefab.prefab");
+        ConfettiPrefab.AddComponent<AutoDespawnScript>();
         NetworkPrefabs.RegisterNetworkPrefab(ConfettiPrefab);
 
         ContentLoader = new ContentLoader(Instance.Info, MainAssetBundle, (content, prefab) => {

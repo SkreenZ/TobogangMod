@@ -143,21 +143,28 @@ namespace TobogangMod.Scripts
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void ProcCramptesServerRpc()
+        public void ProcCramptesServerRpc(bool instant = false)
         {
-            ProcClientRpc(Random.RandomRangeInt(0, RandomSound.Sounds.Count));
+            ProcClientRpc(Random.RandomRangeInt(0, RandomSound.Sounds.Count), instant);
         }
 
         [ClientRpc]
-        void ProcClientRpc(int soundIndex)
+        void ProcClientRpc(int soundIndex, bool instant = false)
         {
             TobogangMod.Logger.LogDebug("Proc cramptés for " + CurrentCramptesPlayer.playerUsername);
 
             _isProccing = true;
 
-            AudioClip clip = RandomSound.Sounds[soundIndex];
-            RandomSound.Instances[CurrentCramptesPlayer.NetworkObject.NetworkObjectId].AudioSource.PlayOneShot(clip);
-            _clipTimer = clip.length;
+            if (instant)
+            {
+                _clipTimer = 0;
+            }
+            else
+            {
+                AudioClip clip = RandomSound.Sounds[soundIndex];
+                RandomSound.Instances[CurrentCramptesPlayer.NetworkObject.NetworkObjectId].AudioSource.PlayOneShot(clip);
+                _clipTimer = clip.length;
+            }
         }
 
         [ClientRpc]
