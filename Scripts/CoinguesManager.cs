@@ -211,12 +211,12 @@ namespace TobogangMod.Scripts
             }
 
             PlayerControllerPatch.LocalPlayerCanvas.gameObject.SetActive(true);
-            HUDManager.Instance.UIAudio.PlayOneShot(TobogangMod.DrumRoll);
+            HUDManager.Instance.UIAudio.PlayOneShot(TobogangMod.DrumRollClip);
 
-            yield return new WaitForSeconds(TobogangMod.DrumRoll.length);
+            yield return new WaitForSeconds(TobogangMod.DrumRollClip.length);
 
             playerNameText.gameObject.SetActive(true);
-            HUDManager.Instance.UIAudio.PlayOneShot(TobogangMod.PartyHorn);
+            HUDManager.Instance.UIAudio.PlayOneShot(TobogangMod.PartyHornClip);
 
             yield return new WaitForSeconds(1.5f);
 
@@ -520,7 +520,7 @@ namespace TobogangMod.Scripts
             else
             {
                 RemoveCoinguesServerRpc(player.NetworkObject, 1);
-                CramptesManager.Instance.SetCramptesPlayerServerRpc(player.NetworkObject);
+                CramptesManager.Instance.SetCramptesPlayerServerRpc(player.NetworkObjectId);
             }
         }
 

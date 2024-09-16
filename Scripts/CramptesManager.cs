@@ -15,7 +15,7 @@ namespace TobogangMod.Scripts
         private static readonly float CRAMPTES_CHANCE_ON_ITEM_IN_SHIP = 1f;
         private static readonly float PROBA_INCREASE = 0.01f;
 #else
-        private static readonly float CRAMPTES_CHANCE_ON_DAMAGE = 0.05f;
+        private static readonly float CRAMPTES_CHANCE_ON_DAMAGE = 0.2f;
         private static readonly float CRAMPTES_CHANCE_ON_ITEM_IN_SHIP = 0.025f;
         private static readonly float PROBA_INCREASE = 0.00001f; // Average 395s
 #endif
@@ -77,7 +77,7 @@ namespace TobogangMod.Scripts
 
             if (Random.Range(0f, 1f) <= _currentProba)
             {
-                ProcClientRpc(Random.RandomRangeInt(0, RandomSound.Sounds.Count));
+                ProcCramptesServerRpc();
                 return;
             }
 
@@ -103,9 +103,9 @@ namespace TobogangMod.Scripts
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void SetCramptesPlayerServerRpc(NetworkObjectReference playerRef)
+        public void SetCramptesPlayerServerRpc(ulong playerNetId)
         {
-            SetCramptesPlayerClientRpc(playerRef.NetworkObjectId);
+            SetCramptesPlayerClientRpc(playerNetId);
         }
 
         [ClientRpc]
@@ -140,6 +140,12 @@ namespace TobogangMod.Scripts
                     HUDManager.Instance.DisplayGlobalNotification($"{lastCramptesPlayer} a perdu les cramptes");
                 }
             }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void ProcCramptesServerRpc()
+        {
+            ProcClientRpc(Random.RandomRangeInt(0, RandomSound.Sounds.Count));
         }
 
         [ClientRpc]

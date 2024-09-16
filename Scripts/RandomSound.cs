@@ -217,6 +217,7 @@ namespace TobogangMod.Scripts
             }
 
             audioSourcePlayer.PlayOneShot(Sounds[soundIndex]);
+            WalkieTalkie.TransmitOneShotAudio(audioSourcePlayer, Sounds[soundIndex]);
         }
     }
 }

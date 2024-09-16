@@ -19,6 +19,8 @@ namespace TobogangMod.Scripts.Items
 
         void Awake()
         {
+            TobogangMod.Logger.LogDebug("TobogangItem Awake");
+
             gameObject.GetComponentInChildren<ScanNodeProperties>().headerText = itemProperties.itemName;
 
             grabbable = true;
@@ -31,7 +33,11 @@ namespace TobogangMod.Scripts.Items
 #if DEBUG
             itemProperties.canBeGrabbedBeforeGameStart = true;
 #endif
+
+            PostAwake();
         }
+
+        protected virtual void PostAwake() {}
 
         public override void ItemActivate(bool used, bool buttonDown = true)
         {

@@ -14,6 +14,7 @@ using System.IO;
 using GameNetcodeStuff;
 using TobogangMod.Patches;
 using Unity.Netcode;
+using NetworkPrefabs = LethalLib.Modules.NetworkPrefabs;
 
 namespace TobogangMod;
 
@@ -29,13 +30,17 @@ public class TobogangMod : BaseUnityPlugin
         public static readonly string TA_GUEULE = "TaGueule";
         public static readonly string RP_JOEL = "RPJoel";
         public static readonly string CRAZY_TOBOBOT = "CrazyTobobot";
+        public static readonly string BUTINGUE = "Butingue";
     }
 
     public static readonly ulong NULL_OBJECT = ulong.MaxValue;
     public static readonly string ASSETS_PATH = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "TobogangMod");
 
-    public static AudioClip DrumRoll { get; private set; } = null!;
-    public static AudioClip PartyHorn { get; private set; } = null!;
+    public static AudioClip DrumRollClip { get; private set; } = null!;
+    public static AudioClip PartyHornClip { get; private set; } = null!;
+    public static AudioClip ConfettiClip { get; private set; } = null!;
+
+    public static GameObject ConfettiPrefab { get; private set; } = null!;
 
     /* Instances */
 
@@ -55,8 +60,12 @@ public class TobogangMod : BaseUnityPlugin
         MainAssetBundle = AssetBundle.LoadFromFile(Path.Combine(ASSETS_PATH, "tobogangasset"));
 
         NetworkPrefab = MainAssetBundle.LoadAsset<GameObject>("NetworkHandler");
-        DrumRoll = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/drum_roll.mp3");
-        PartyHorn = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/party_horn.mp3");
+        DrumRollClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/drum_roll.mp3");
+        PartyHornClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/party_horn.mp3");
+        ConfettiClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/confetti.mp3");
+
+        ConfettiPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/ConfettiPrefab.prefab");
+        NetworkPrefabs.RegisterNetworkPrefab(ConfettiPrefab);
 
         ContentLoader = new ContentLoader(Instance.Info, MainAssetBundle, (content, prefab) => {
             Prefabs.Add(content.ID, prefab);
@@ -113,6 +122,11 @@ public class TobogangMod : BaseUnityPlugin
 
         ContentLoader.Register(new ScrapItem(TobogangItems.CRAZY_TOBOBOT, "Assets/CustomAssets/Items/TobogangCrazyTobobot.asset", 0, Levels.LevelTypes.None, null, item => {
             var script = item.spawnPrefab.AddComponent<TobogangCrazyTobobot>();
+            script.itemProperties = item;
+        }));
+
+        ContentLoader.Register(new ScrapItem(TobogangItems.BUTINGUE, "Assets/CustomAssets/Items/TobogangButingue.asset", 1000, Levels.LevelTypes.All, null, (Item item) => {
+            var script = item.spawnPrefab.AddComponent<TobogangButingue>();
             script.itemProperties = item;
         }));
 
