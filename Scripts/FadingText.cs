@@ -8,7 +8,7 @@ namespace TobogangMod.Scripts
 {
     public class FadingText : MonoBehaviour
     {
-        public float TranslationSpeed { get; set; } = 25f;
+        public float TranslationSpeed { get; set; } = 0.05f;
         public float AlphaSpeed { get; set; } = 0.35f;
 
         void Start()

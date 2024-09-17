@@ -46,6 +46,9 @@ namespace TobogangMod.Scripts
         private Dictionary<string, BetInfo> _playerBets = [];
         public Dictionary<string, int> PlayerProfits = [];
 
+        private TextMeshProUGUI? _localPlayerCoinguesDisplay = null;
+        private TextMeshProUGUI? _localPlayerCoinguesDisplayS = null;
+
         public static void Init()
         {
             NetworkPrefab = LethalLib.Modules.NetworkPrefabs.CloneNetworkPrefab(TobogangMod.NetworkPrefab, "CoinguesManager");
@@ -89,6 +92,27 @@ namespace TobogangMod.Scripts
             }
 
             SyncAllClientsServerRpc();
+
+        }
+
+        void Update()
+        {
+            if (_localPlayerCoinguesDisplay == null || _localPlayerCoinguesDisplayS == null)
+            {
+                if (PlayerControllerPatch.LocalPlayerCanvas != null)
+                {
+                    _localPlayerCoinguesDisplay = PlayerControllerPatch.LocalPlayerCanvas.transform.Find("CoinguesAmount").gameObject.GetComponent<TextMeshProUGUI>();
+                    _localPlayerCoinguesDisplayS = PlayerControllerPatch.LocalPlayerCanvas.transform.Find("CoinguesAmountS").gameObject.GetComponent<TextMeshProUGUI>();
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            var amount = GetCoingues(StartOfRound.Instance.localPlayerController);
+            _localPlayerCoinguesDisplay.text = $"{amount} coingue";
+            _localPlayerCoinguesDisplayS.gameObject.SetActive(amount > 1);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -179,14 +203,6 @@ namespace TobogangMod.Scripts
         {
             yield return new WaitForSeconds(5f);
 
-            foreach (var (playerId, bet) in _playerBets)
-            {
-                if (mostProfitablePlayer != null && bet.PlayerNetId == GetPlayer(mostProfitablePlayer)?.NetworkObjectId)
-                {
-                    AddCoinguesServerRpc(GetPlayer(playerId)?.NetworkObject, (int)bet.Amount * _playerBets.Count);
-                }
-            }
-
             FinishBetcoingueClientRpc(mostProfitablePlayer ?? "");
         }
 
@@ -246,12 +262,20 @@ namespace TobogangMod.Scripts
                 yield return new WaitForSeconds(1.5f);
             }
 
-            yield return new WaitForSeconds(7.5f);
+            yield return new WaitForSeconds(5f);
 
             betcoingue.gameObject.SetActive(false);
 
             if (IsServer)
             {
+                foreach (var (playerId, bet) in _playerBets)
+                {
+                    if (winningPlayerId != "" && bet.PlayerNetId == GetPlayer(winningPlayerId)?.NetworkObjectId)
+                    {
+                        AddCoinguesServerRpc(GetPlayer(playerId)?.NetworkObject, (int)bet.Amount * _playerBets.Count);
+                    }
+                }
+
                 ClearAllBetsClientRpc();
             }
         }
@@ -411,7 +435,7 @@ namespace TobogangMod.Scripts
 
                 var textObject = GameObject.Instantiate(textTransform.gameObject, canvasTransform);
                 textObject.AddComponent<FadingText>();
-                textObject.GetComponent<TextMeshProUGUI>().text = $"{(diff > 0 ? "+" : "")}{diff} coingue{(Math.Abs(diff) > 1 ? "s" : "")}";
+                textObject.GetComponent<TextMeshProUGUI>().text = $"{(diff > 0 ? "+" : "")}{diff}";
                 textObject.GetComponent<TextMeshProUGUI>().color = diff > 0 ? Color.green : Color.red;
 
                 textObject.SetActive(true);

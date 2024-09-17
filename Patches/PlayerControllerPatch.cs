@@ -15,7 +15,7 @@ namespace TobogangMod.Patches
     {
         public static readonly string MUTE_ICON = "TobogangMutedIcon";
         public static readonly string DEAF_ICON = "TobogangDeafenedIcon";
-        public static Canvas LocalPlayerCanvas { get; private set; } = null!;
+        public static GameObject? LocalPlayerCanvas { get; private set; } = null;
 
         [HarmonyPatch(nameof(PlayerControllerB.Start))]
         [HarmonyPostfix]
@@ -26,8 +26,10 @@ namespace TobogangMod.Patches
             if (LocalPlayerCanvas == null)
             {
                 TobogangMod.Logger.LogDebug("Spawning local player canvas");
-                LocalPlayerCanvas = GameObject.Instantiate(TobogangMod.MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/TobogangCanvas.prefab")).GetComponent<Canvas>();
-                LocalPlayerCanvas.worldCamera = Camera.main;
+
+                var toboCanvas = TobogangMod.MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/TobogangCanvas.prefab");
+                var canvas = GameObject.Find("IngamePlayerHUD");
+                LocalPlayerCanvas = GameObject.Instantiate(toboCanvas.transform.Find("Root").gameObject, canvas.transform);
 
                 var betcoingue = LocalPlayerCanvas.transform.Find("BetcoingueResult");
                 var betcoingueTitle = betcoingue.transform.Find("Header/Title");
@@ -44,6 +46,9 @@ namespace TobogangMod.Patches
                     betcoingue.transform.Find($"Content/Player{i}/Coingues").GetComponent<TextMeshProUGUI>().font = HUDManager.Instance.newProfitQuotaText.font;
                     betcoingue.transform.Find($"Content/Player{i}").gameObject.SetActive(false);
                 }
+
+                LocalPlayerCanvas.transform.Find("CoinguesAmount").gameObject.GetComponent<TextMeshProUGUI>().font = HUDManager.Instance.newProfitQuotaText.font;
+                LocalPlayerCanvas.transform.Find("CoinguesAmountS").gameObject.GetComponent<TextMeshProUGUI>().font = HUDManager.Instance.newProfitQuotaText.font;
 
                 betcoingue.gameObject.SetActive(false);
 
