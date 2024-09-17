@@ -6,6 +6,11 @@ using UnityEngine;
 
 namespace TobogangMod.Patches
 {
+    public enum LevelIds
+    {
+        Company = 3
+    }
+
     [HarmonyPatch(typeof(StartOfRound))]
     public class StartOfRoundPatch
     {
@@ -57,6 +62,30 @@ namespace TobogangMod.Patches
             if (NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsHost)
             {
                 CoinguesManager.Instance.ResetClaimsServerRpc();
+
+                if (__instance.currentLevel.levelID == (int)LevelIds.Company)
+                {
+                    TobogangMod.Logger.LogDebug("Spawning toboggan");
+                    var toboggan = GameObject.Instantiate(TobogangMod.TobogganPrefab, new Vector3(-17.76f, -2.63f, -44.9f), Quaternion.Euler(0f, 180f, 0f));
+                    toboggan.GetComponent<NetworkObject>().Spawn();
+                }
+            }
+        }
+
+        [HarmonyPatch(nameof(StartOfRound.ShipHasLeft)), HarmonyPostfix]
+        private static void ShipHasLeftPostfix(StartOfRound __instance)
+        {
+            if (!__instance.IsServer)
+            {
+                return;
+            }
+
+            var toboggan = GameObject.FindFirstObjectByType<TobogganScript>();
+
+            if (toboggan != null)
+            {
+                TobogangMod.Logger.LogDebug("Despawning toboggan");
+                toboggan.GetComponent<NetworkObject>().Despawn();
             }
         }
 

@@ -34,6 +34,7 @@ namespace TobogangMod.Scripts.Items
             itemProperties.canBeGrabbedBeforeGameStart = true;
 #endif
 
+            SetScrapValue(0);
             PostAwake();
         }
 

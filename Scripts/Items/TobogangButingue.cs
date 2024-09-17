@@ -41,7 +41,7 @@ namespace TobogangMod.Scripts.Items
 
             TobogangItemId = TobogangMod.TobogangItems.BUTINGUE;
             CoinguesPrice = 50;
-            Keywords = ["boite de butingue", "butingue", "boite", "boite de", "boite de b", "boite de bu", "boite de but", "boite de buti", "boite de butin", "boite de buting", "boite de butingu"];
+            Keywords = ["boite de butingue", "butingue", "butin", "boite", "boite de", "boite de b", "boite de bu", "boite de but", "boite de buti", "boite de butin", "boite de buting", "boite de butingu"];
         }
 
         protected override void PostAwake()

@@ -7,6 +7,7 @@ using System.Text;
 using TMPro;
 using TobogangMod.Model;
 using TobogangMod.Patches;
+using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
@@ -199,7 +200,8 @@ namespace TobogangMod.Scripts
         {
             var winningPlayer = GetPlayer(winningPlayerId);
 
-            PlayerControllerPatch.LocalPlayerCanvas.transform.Find($"BetcoingueResult/NoBet").gameObject.SetActive(false);
+            var betcoingue = PlayerControllerPatch.LocalPlayerCanvas.transform.Find("BetcoingueResult");
+            PlayerControllerPatch.LocalPlayerCanvas.transform.Find("BetcoingueResult/NoBet").gameObject.SetActive(false);
 
             var playerNameText = PlayerControllerPatch.LocalPlayerCanvas.transform.Find("BetcoingueResult/Header/PlayerName").gameObject.GetComponent<TextMeshProUGUI>();
             playerNameText.gameObject.SetActive(false);
@@ -210,7 +212,7 @@ namespace TobogangMod.Scripts
                 PlayerControllerPatch.LocalPlayerCanvas.transform.Find($"BetcoingueResult/Content/Player{i}").gameObject.SetActive(false);
             }
 
-            PlayerControllerPatch.LocalPlayerCanvas.gameObject.SetActive(true);
+            betcoingue.gameObject.SetActive(true);
             HUDManager.Instance.UIAudio.PlayOneShot(TobogangMod.DrumRollClip);
 
             yield return new WaitForSeconds(TobogangMod.DrumRollClip.length);
@@ -246,7 +248,7 @@ namespace TobogangMod.Scripts
 
             yield return new WaitForSeconds(7.5f);
 
-            PlayerControllerPatch.LocalPlayerCanvas.gameObject.SetActive(false);
+            betcoingue.gameObject.SetActive(false);
 
             if (IsServer)
             {
@@ -396,8 +398,24 @@ namespace TobogangMod.Scripts
             }
 
             var playerController = playerNetworkObject.gameObject.GetComponent<PlayerControllerB>();
+            var oldCoingues = _coingues[GetPlayerId(playerController)];
+            newCoingues = Math.Max(newCoingues, 0);
+            var diff = newCoingues - oldCoingues;
 
-            _coingues[GetPlayerId(playerController)] = Math.Max(newCoingues, 0);
+            _coingues[GetPlayerId(playerController)] = newCoingues;
+
+            if (playerController == StartOfRound.Instance.localPlayerController && diff != 0)
+            {
+                var canvasTransform = PlayerControllerPatch.LocalPlayerCanvas.gameObject.transform;
+                var textTransform = canvasTransform.Find("CoinguesText");
+
+                var textObject = GameObject.Instantiate(textTransform.gameObject, canvasTransform);
+                textObject.AddComponent<FadingText>();
+                textObject.GetComponent<TextMeshProUGUI>().text = $"{(diff > 0 ? "+" : "")}{diff} coingue{(Math.Abs(diff) > 1 ? "s" : "")}";
+                textObject.GetComponent<TextMeshProUGUI>().color = diff > 0 ? Color.green : Color.red;
+
+                textObject.SetActive(true);
+            }
 
 #if DEBUG
             TobogangMod.Logger.LogDebug($"{playerController.playerUsername} now has {_coingues[GetPlayerId(playerController)]} coingues");
@@ -650,6 +668,88 @@ namespace TobogangMod.Scripts
 
             muteIcon.GetComponent<RectTransform>().localPosition = mutePos;
             deafIcon.GetComponent<RectTransform>().localPosition = deafPos;
+        }
+
+        public GameObject? SpawnScrap(Item item, Vector3 location, bool falling = false)
+        {
+            if (!IsServer)
+            {
+                return null;
+            }
+
+            GameObject spawnedItem = GameObject.Instantiate(item.spawnPrefab, location, Quaternion.Euler(item.restingRotation), RoundManager.Instance.spawnedScrapContainer);
+
+            var grabbable = spawnedItem.GetComponent<GrabbableObject>();
+
+            if (falling)
+            {
+                grabbable.startFallingPosition = location;
+                StartCoroutine(SetObjectToHitGroundSFX(grabbable));
+                grabbable.targetFloorPosition = grabbable.GetItemFloorPosition(location);
+            }
+
+            var random = new System.Random((int)grabbable.targetFloorPosition.x + (int)grabbable.targetFloorPosition.y);
+            grabbable.SetScrapValue((int)((double)random.Next(item.minValue + 25, item.maxValue + 35) * RoundManager.Instance.scrapValueMultiplier));
+
+            var itemNet = spawnedItem.GetComponent<NetworkObject>();
+            itemNet.Spawn();
+
+            SpawnScrapClientRpc(itemNet, grabbable.scrapValue, location, falling);
+
+            return spawnedItem;
+        }
+
+        [ClientRpc]
+        private void SpawnScrapClientRpc(NetworkObjectReference itemRef, int value, Vector3 location, bool falling)
+        {
+            if (!IsServer)
+            {
+                StartCoroutine(WaitForItemToSpawnOnClient(itemRef, value, location, falling));
+            }
+        }
+
+        private IEnumerator SetObjectToHitGroundSFX(GrabbableObject gObject)
+        {
+            yield return new WaitForEndOfFrame();
+            gObject.reachedFloorTarget = false;
+            gObject.hasHitGround = false;
+            gObject.fallTime = 0.0f;
+        }
+
+        private IEnumerator WaitForItemToSpawnOnClient(NetworkObjectReference netObjectRef, int value, Vector3 location, bool falling)
+        {
+            float startTime = Time.realtimeSinceStartup;
+            NetworkObject? netObject = null;
+            while (Time.realtimeSinceStartup - startTime < 8.0f && !netObjectRef.TryGet(out netObject))
+            {
+                yield return new WaitForSeconds(0.03f);
+            }
+
+            if (netObject == null)
+            {
+                TobogangMod.Logger.LogError("Failed to spawn scrap: No network object found");
+            }
+            else
+            {
+                yield return new WaitForEndOfFrame();
+                GrabbableObject grabbable = netObject.GetComponent<GrabbableObject>();
+                RoundManager.Instance.totalScrapValueInLevel += grabbable.scrapValue;
+                grabbable.SetScrapValue(value);
+
+                if (falling)
+                {
+                    grabbable.startFallingPosition = location;
+                    grabbable.fallTime = 0f;
+                    grabbable.hasHitGround = false;
+                    grabbable.reachedFloorTarget = false;
+                }
+                else
+                {
+                    grabbable.fallTime = 1f;
+                    grabbable.hasHitGround = true;
+                    grabbable.reachedFloorTarget = true;
+                }
+            }
         }
     }
 }

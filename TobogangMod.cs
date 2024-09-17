@@ -39,8 +39,10 @@ public class TobogangMod : BaseUnityPlugin
     public static AudioClip DrumRollClip { get; private set; } = null!;
     public static AudioClip PartyHornClip { get; private set; } = null!;
     public static AudioClip ConfettiClip { get; private set; } = null!;
+    public static AudioClip SuccessClip { get; private set; } = null!;
 
     public static GameObject ConfettiPrefab { get; private set; } = null!;
+    public static GameObject TobogganPrefab { get; private set; } = null!;
 
     /* Instances */
 
@@ -63,10 +65,15 @@ public class TobogangMod : BaseUnityPlugin
         DrumRollClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/drum_roll.mp3");
         PartyHornClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/party_horn.mp3");
         ConfettiClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/confetti.mp3");
+        SuccessClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/success.mp3");
 
         ConfettiPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/ConfettiPrefab.prefab");
         ConfettiPrefab.AddComponent<AutoDespawnScript>();
         NetworkPrefabs.RegisterNetworkPrefab(ConfettiPrefab);
+
+        TobogganPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomPrefabs/TobogganPrefab.prefab");
+        TobogganPrefab.AddComponent<TobogganScript>();
+        NetworkPrefabs.RegisterNetworkPrefab(TobogganPrefab);
 
         ContentLoader = new ContentLoader(Instance.Info, MainAssetBundle, (content, prefab) => {
             Prefabs.Add(content.ID, prefab);

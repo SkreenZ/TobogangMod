@@ -45,7 +45,9 @@ namespace TobogangMod.Patches
                     betcoingue.transform.Find($"Content/Player{i}").gameObject.SetActive(false);
                 }
 
-                LocalPlayerCanvas.gameObject.SetActive(false);
+                betcoingue.gameObject.SetActive(false);
+
+                LocalPlayerCanvas.gameObject.SetActive(true);
             }
 
             if (NetworkManager.Singleton.IsServer)
@@ -130,5 +132,19 @@ namespace TobogangMod.Patches
             CoinguesManager.Instance.RemoveCoinguesServerRpc(__instance.NetworkObject, CoinguesManager.DEATH_MALUS);
             CoinguesManager.Instance.SetClaimStreakServerRpc(__instance.NetworkObject, -1);
         }
+
+#if DEBUG
+        [HarmonyPatch(nameof(PlayerControllerB.SetHoverTipAndCurrentInteractTrigger)), HarmonyPostfix]
+        private static void SetHoverTipAndCurrentInteractTriggerPostfix(PlayerControllerB __instance)
+        {
+            return;
+            var ray = new Ray(__instance.gameplayCamera.transform.position, __instance.gameplayCamera.transform.forward);
+
+            if (Physics.Raycast(ray, out var hit, __instance.grabDistance, __instance.interactableObjectsMask))
+            {
+                TobogangMod.Logger.LogDebug($"Hit: {hit.transform.gameObject}, layer: {hit.transform.gameObject.layer}");
+            }
+        }
+#endif
     }
 }
