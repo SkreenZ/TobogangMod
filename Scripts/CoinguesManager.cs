@@ -49,6 +49,8 @@ namespace TobogangMod.Scripts
         private TextMeshProUGUI? _localPlayerCoinguesDisplay = null;
         private TextMeshProUGUI? _localPlayerCoinguesDisplayS = null;
 
+        private GameObject _explosionPrefab = null!;
+
         public static void Init()
         {
             NetworkPrefab = LethalLib.Modules.NetworkPrefabs.CloneNetworkPrefab(TobogangMod.NetworkPrefab, "CoinguesManager");
@@ -68,6 +70,14 @@ namespace TobogangMod.Scripts
                 TobogangMod.Logger.LogDebug($"{item.itemName} ({item.itemId}): {item.minValue} / {item.maxValue}, {item.isScrap}");
             }
 #endif
+
+            _explosionPrefab = GameObject.Instantiate(StartOfRound.Instance.explosionPrefab);
+            _explosionPrefab.SetActive(false);
+
+            var audio = _explosionPrefab.GetComponentInChildren<AudioSource>();
+            audio.maxDistance = 50f;
+            audio.spatialBlend = 1f;
+            audio.rolloffMode = AudioRolloffMode.Linear;
 
             if (IsServer)
             {
@@ -780,6 +790,39 @@ namespace TobogangMod.Scripts
                     grabbable.hasHitGround = true;
                     grabbable.reachedFloorTarget = true;
                 }
+            }
+        }
+
+        public void StartNuke()
+        {
+            var ship = GameObject.Find("HangarShip");
+            var alarm = Instantiate(new GameObject(), ship.transform.position + Vector3.up * 10, Quaternion.identity, ship.transform);
+            var alarmAudio = alarm.AddComponent<AudioSource>();
+            alarmAudio.clip = TobogangMod.NukeAlarmClip;
+            alarmAudio.minDistance = 0f;
+            alarmAudio.maxDistance = 1000f;
+            alarmAudio.rolloffMode = AudioRolloffMode.Custom;
+            AnimationCurve distanceCurve = new AnimationCurve(new[] { new Keyframe(0, 1), new Keyframe(0.1f, 0.1f), new Keyframe(1, 0) });
+            alarmAudio.SetCustomCurve(AudioSourceCurveType.CustomRolloff, distanceCurve);
+            alarmAudio.spatialBlend = 1f;
+            alarmAudio.Play();
+
+            StartCoroutine(Nuke());
+        }
+
+        private IEnumerator Nuke()
+        {
+            yield return new WaitForSeconds(TobogangMod.NukeAlarmClip.length);
+
+            while (!StartOfRound.Instance.inShipPhase)
+            {
+                foreach (var enemy in GameObject.FindObjectsOfType<EnemyAI>())
+                {
+                    Landmine.SpawnExplosion(enemy.transform.position, true, 4f, 6f, overridePrefab: _explosionPrefab);
+                    yield return new WaitForSeconds(0.1f);
+                }
+
+                yield return new WaitForSeconds(2f);
             }
         }
     }

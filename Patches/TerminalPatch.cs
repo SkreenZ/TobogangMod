@@ -283,8 +283,8 @@ namespace TobogangMod.Patches
 #if DEBUG
             else if (__result == MOTHERLODE_NODE)
             {
-                CoinguesManager.Instance.AddCoinguesServerRpc(player.NetworkObject, 100);
-                node.displayText = $"100 coingues obtenus";
+                CoinguesManager.Instance.AddCoinguesServerRpc(player.NetworkObject, 1000);
+                node.displayText = $"1000 coingues obtenus";
             }
             else if (__result == DAMAGE_NODE)
             {

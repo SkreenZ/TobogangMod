@@ -31,6 +31,7 @@ public class TobogangMod : BaseUnityPlugin
         public static readonly string RP_JOEL = "RPJoel";
         public static readonly string CRAZY_TOBOBOT = "CrazyTobobot";
         public static readonly string BUTINGUE = "Butingue";
+        public static readonly string NUKE = "Nuke";
     }
 
     public static readonly ulong NULL_OBJECT = ulong.MaxValue;
@@ -40,6 +41,7 @@ public class TobogangMod : BaseUnityPlugin
     public static AudioClip PartyHornClip { get; private set; } = null!;
     public static AudioClip ConfettiClip { get; private set; } = null!;
     public static AudioClip SuccessClip { get; private set; } = null!;
+    public static AudioClip NukeAlarmClip { get; private set; } = null!;
 
     public static GameObject ConfettiPrefab { get; private set; } = null!;
     public static GameObject TobogganPrefab { get; private set; } = null!;
@@ -66,6 +68,7 @@ public class TobogangMod : BaseUnityPlugin
         PartyHornClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/party_horn.mp3");
         ConfettiClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/confetti.mp3");
         SuccessClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/success.mp3");
+        NukeAlarmClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/nuke_alarm.mp3");
 
         ConfettiPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/ConfettiPrefab.prefab");
         ConfettiPrefab.AddComponent<AutoDespawnScript>();
@@ -130,6 +133,11 @@ public class TobogangMod : BaseUnityPlugin
 
         ContentLoader.Register(new CustomItem(TobogangItems.CRAZY_TOBOBOT, "Assets/CustomAssets/Items/TobogangCrazyTobobot.asset",  item => {
             var script = item.spawnPrefab.AddComponent<TobogangCrazyTobobot>();
+            script.itemProperties = item;
+        }));
+
+        ContentLoader.Register(new CustomItem(TobogangItems.NUKE, "Assets/CustomAssets/Items/TobogangNuke.asset", item => {
+            var script = item.spawnPrefab.AddComponent<TobogangNuke>();
             script.itemProperties = item;
         }));
 

@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using System.Collections.Generic;
 using System.IO;
+using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
 using NetworkPrefabs = LethalLib.Modules.NetworkPrefabs;
@@ -12,7 +13,7 @@ namespace TobogangMod.Scripts
         private static readonly float BASE_MIN_TIME = 30f;
         private static readonly float BASE_MAX_TIME = 300f;
         private static readonly float CRAZY_MIN_TIME = 1f;
-        private static readonly float CRAZY_MAX_TIME = 5f;
+        private static readonly float CRAZY_MAX_TIME = 4f;
 
         public static List<AudioClip> Sounds = [];
         public static GameObject NetworkPrefab = null!;
@@ -65,12 +66,6 @@ namespace TobogangMod.Scripts
 
             AudioSource = GetComponent<AudioSource>();
 
-            // 1% chance to be crazy
-            if (UnityEngine.Random.Range(0f, 1f) <= 0.01f && (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
-            {
-                SetCrazyServerRpc(true);
-            }
-
             _timeUntilNextSound = UnityEngine.Random.Range(MinTimeBetweenSounds, MaxTimeBetweenSounds);
         }
 
@@ -100,6 +95,14 @@ namespace TobogangMod.Scripts
                     NetworkObject.Despawn();
                 }
 
+                return;
+            }
+
+            var enemy = Parent.GetComponent<EnemyAI>();
+            var player = Parent.GetComponent<PlayerControllerB>();
+
+            if ((enemy != null && enemy.isEnemyDead) || (player != null && player.isPlayerDead))
+            {
                 return;
             }
 
