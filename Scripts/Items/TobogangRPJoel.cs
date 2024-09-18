@@ -19,6 +19,8 @@ namespace TobogangMod.Scripts
 #endif
         TobogangRPJoel()
         {
+            UsableInShip = true;
+
             TobogangItemId = TobogangMod.TobogangItems.RP_JOEL;
             CoinguesPrice = 150;
             Keywords = ["rp joel", "joel", "rp joe", "rpjoel", "rpjoe", "rpj", "rp j"];

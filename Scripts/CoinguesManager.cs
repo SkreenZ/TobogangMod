@@ -838,6 +838,11 @@ namespace TobogangMod.Scripts
         [ServerRpc(RequireOwnership = false)]
         public void SetPlayerDiscoServerRpc(NetworkObjectReference playerRef, bool isDisco)
         {
+            if (!playerRef.TryGet(out var playerNet))
+            {
+                return;
+            }
+
             if (isDisco)
             {
                 DiscoPlayers.Add(playerRef.NetworkObjectId);
@@ -848,6 +853,11 @@ namespace TobogangMod.Scripts
             }
 
             SetPlayerDiscoClientRpc(playerRef, DiscoPlayers.ToArray());
+
+            if (isDisco)
+            {
+                StartCoroutine(WaitForEndOfRoundAndStopDisco(playerNet.gameObject));
+            }
         }
 
         [ClientRpc]
@@ -889,6 +899,17 @@ namespace TobogangMod.Scripts
             {
                 StartCoroutine(WaitAndDestroyDisco(parent));
             }
+        }
+
+        private IEnumerator WaitForEndOfRoundAndStopDisco(GameObject player)
+        {
+            while (!StartOfRound.Instance.inShipPhase)
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
+
+            TobogangMod.Logger.LogDebug($"Stopping disco for {player.GetComponent<PlayerControllerB>().playerUsername}");
+            SetPlayerDiscoServerRpc(player.GetComponent<NetworkObject>(), false);
         }
 
         private IEnumerator WaitAndDestroyDisco(Transform parent)

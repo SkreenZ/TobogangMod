@@ -182,8 +182,10 @@ namespace TobogangMod.Patches
             {
                 node.displayText =  "Items Tobogang\n";
                 node.displayText += "____________________________\n\n";
+                var items = TobogangMod.GetTobogangItems().ToList();
+                items.Sort(((item1, item2) => item1.CoinguesPrice - item2.CoinguesPrice));
 
-                foreach (var item in TobogangMod.GetTobogangItems())
+                foreach (var item in items)
                 {
                     node.displayText += $"* {item.itemProperties.itemName}  //  {item.CoinguesPrice} coingues\n";
                 }

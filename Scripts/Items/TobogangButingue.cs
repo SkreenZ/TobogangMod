@@ -17,7 +17,7 @@ namespace TobogangMod.Scripts.Items
             Coingues50,
             Coingues100,
             Cramptes,
-            Crazy,
+            Funky,
             RPJoel,
             TaGueule,
             InstantCramptes
@@ -29,7 +29,7 @@ namespace TobogangMod.Scripts.Items
             { Loot.Coingues50, 40 },
             { Loot.Coingues100, 10 },
             { Loot.Cramptes, 10 },
-            { Loot.Crazy, 25 },
+            { Loot.Funky, 25 },
             { Loot.RPJoel, 25 },
             { Loot.TaGueule, 25 },
             { Loot.InstantCramptes, 5 },
@@ -38,6 +38,7 @@ namespace TobogangMod.Scripts.Items
         public TobogangButingue()
         {
             IsUsingPlaceholderPrefab = false;
+            UsableInShip = true;
 
             TobogangItemId = TobogangMod.TobogangItems.BUTINGUE;
             CoinguesPrice = 50;
@@ -95,9 +96,9 @@ namespace TobogangMod.Scripts.Items
                     break;
                 }
 
-                case Loot.Crazy:
+                case Loot.Funky:
                 {
-                    CoinguesManager.Instance.GiveTobogangItemToPlayerServerRpc(TobogangMod.TobogangItems.CRAZY_TOBOBOT, player.NetworkObject);
+                    CoinguesManager.Instance.GiveTobogangItemToPlayerServerRpc(TobogangMod.TobogangItems.FUNKY_BOULE, player.NetworkObject);
                     break;
                 }
 

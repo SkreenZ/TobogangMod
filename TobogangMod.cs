@@ -29,7 +29,7 @@ public class TobogangMod : BaseUnityPlugin
         public static readonly string PURGE = "Purge";
         public static readonly string TA_GUEULE = "TaGueule";
         public static readonly string RP_JOEL = "RPJoel";
-        public static readonly string CRAZY_TOBOBOT = "CrazyTobobot";
+        public static readonly string FUNKY_BOULE = "FunkyBoule";
         public static readonly string BUTINGUE = "Butingue";
         public static readonly string NUKE = "Nuke";
     }
@@ -131,8 +131,8 @@ public class TobogangMod : BaseUnityPlugin
             script.itemProperties = item;
         }));
 
-        ContentLoader.Register(new CustomItem(TobogangItems.CRAZY_TOBOBOT, "Assets/CustomAssets/Items/TobogangCrazyTobobot.asset",  item => {
-            var script = item.spawnPrefab.AddComponent<TobogangCrazyTobobot>();
+        ContentLoader.Register(new CustomItem(TobogangItems.FUNKY_BOULE, "Assets/CustomAssets/Items/TobogangFunkyBoule.asset",  item => {
+            var script = item.spawnPrefab.AddComponent<TobogangFunkyBoule>();
             script.itemProperties = item;
         }));
 

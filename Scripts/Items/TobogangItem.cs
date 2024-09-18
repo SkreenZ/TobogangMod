@@ -16,6 +16,7 @@ namespace TobogangMod.Scripts.Items
         public bool IsUsableOnEnemies = false;
 
         protected bool IsUsingPlaceholderPrefab = true;
+        protected bool UsableInShip = false;
 
         void Awake()
         {
@@ -40,8 +41,18 @@ namespace TobogangMod.Scripts.Items
 
         protected virtual void PostAwake() {}
 
+        protected virtual bool CanUseOnPlayerOrEnemy(GameObject playerOrEnemy)
+        {
+            return true;
+        }
+
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
+            if (!UsableInShip && StartOfRound.Instance.inShipPhase)
+            {
+                return;
+            }
+
             playerHeldBy.interactRay = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
 
             float closest = -1f;
@@ -77,16 +88,10 @@ namespace TobogangMod.Scripts.Items
                     return;
                 }
 
-                if (targetIsPlayer)
+                if (CanUseOnPlayerOrEnemy(hitObject))
                 {
-                    TobogangMod.Logger.LogDebug($"Player hit: {hitObject.GetComponent<PlayerControllerB>().playerUsername}");
+                    ActivateOnPlayerOrEnemyServerRpc(hitObject.GetComponent<NetworkObject>(), playerHeldBy.NetworkObject);
                 }
-                else
-                {
-                    TobogangMod.Logger.LogDebug($"Enemy hit: {hitObject.GetComponent<EnemyAI>().enemyType.enemyName}");
-                }
-
-                ActivateOnPlayerOrEnemyServerRpc(hitObject.GetComponent<NetworkObject>(), playerHeldBy.NetworkObject);
             }
             else
             {

@@ -20,6 +20,8 @@ namespace TobogangMod.Scripts
 
         TobogangTaGueule()
         {
+            UsableInShip = true;
+
             TobogangItemId = TobogangMod.TobogangItems.TA_GUEULE;
             CoinguesPrice = 150;
             Keywords = ["ta gueule", "ta gueul", "ta gueu", "ta gue", "ta gu", "ta g", "tg", "tagueule", "tagueul", "tagueu", "tague", "tagu", "tag"];
