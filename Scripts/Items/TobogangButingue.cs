@@ -52,6 +52,11 @@ namespace TobogangMod.Scripts.Items
 
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
+            if (StartOfRound.Instance.inShipPhase)
+            {
+                return;
+            }
+
             var player = playerHeldBy;
             ActivateServerRpc();
 

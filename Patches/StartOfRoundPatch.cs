@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using HarmonyLib;
+using LethalLib.Modules;
 using TobogangMod.Scripts;
 using Unity.Netcode;
 using UnityEngine;
@@ -20,15 +21,6 @@ namespace TobogangMod.Patches
         {
             if (NetworkManager.Singleton.IsServer)
             {
-                foreach (var item in TobogangMod.ContentLoader.LoadedContent.Values)
-                {
-                    var scrap = item as LethalLib.Modules.ContentLoader.ScrapItem;
-                    if (scrap != null)
-                    {
-                        __instance.allItemsList.itemsList.Add(scrap.Item);
-                    }
-                }
-
                 GameObject cramptesManager = GameObject.Instantiate(CramptesManager.NetworkPrefab, Vector3.zero, Quaternion.identity);
                 cramptesManager.GetComponent<NetworkObject>().Spawn();
 
@@ -58,6 +50,13 @@ namespace TobogangMod.Patches
         private static void StartGamePostfix(StartOfRound __instance)
         {
             TobogangMod.Logger.LogDebug("Starting a new game");
+
+#if DEBUG
+            foreach (var scrap in __instance.currentLevel.spawnableScrap)
+            {
+                TobogangMod.Logger.LogDebug($"Spawnable scrap: {scrap.spawnableItem.name}, rarity: {scrap.rarity}");
+            }
+#endif
 
             if (NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsHost)
             {

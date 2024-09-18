@@ -62,6 +62,13 @@ namespace TobogangMod.Scripts
 
         void Start()
         {
+#if DEBUG
+            foreach (var item in StartOfRound.Instance.allItemsList.itemsList)
+            {
+                TobogangMod.Logger.LogDebug($"{item.itemName} ({item.itemId}): {item.minValue} / {item.maxValue}, {item.isScrap}");
+            }
+#endif
+
             if (IsServer)
             {
                 var coinguesPrefix = TobogangMod.Instance.Info.Metadata.Name + "_Coingues_";
@@ -314,7 +321,7 @@ namespace TobogangMod.Scripts
 
             var playerController = playerNetworkObject.GetComponent<PlayerControllerB>();
 
-            GameObject gameObject = GameObject.Instantiate(((ScrapItem)TobogangMod.ContentLoader.LoadedContent[item]).Item.spawnPrefab);
+            GameObject gameObject = GameObject.Instantiate(((CustomItem)TobogangMod.ContentLoader.LoadedContent[item]).Item.spawnPrefab);
             gameObject.GetComponent<NetworkObject>().Spawn();
 
             var grabbable = gameObject.GetComponent<GrabbableObject>();

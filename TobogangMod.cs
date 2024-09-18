@@ -118,22 +118,22 @@ public class TobogangMod : BaseUnityPlugin
         }));
         */
 
-        ContentLoader.Register(new ScrapItem(TobogangItems.TA_GUEULE, "Assets/CustomAssets/Items/TobogangTaGueule.asset", 0, Levels.LevelTypes.None, null, item => {
+        ContentLoader.Register(new CustomItem(TobogangItems.TA_GUEULE, "Assets/CustomAssets/Items/TobogangTaGueule.asset", item => {
             var script = item.spawnPrefab.AddComponent<TobogangTaGueule>();
             script.itemProperties = item;
         }));
 
-        ContentLoader.Register(new ScrapItem(TobogangItems.RP_JOEL, "Assets/CustomAssets/Items/TobogangRPJoel.asset", 0, Levels.LevelTypes.None, null, item => {
+        ContentLoader.Register(new CustomItem(TobogangItems.RP_JOEL, "Assets/CustomAssets/Items/TobogangRPJoel.asset", item => {
             var script = item.spawnPrefab.AddComponent<TobogangRPJoel>();
             script.itemProperties = item;
         }));
 
-        ContentLoader.Register(new ScrapItem(TobogangItems.CRAZY_TOBOBOT, "Assets/CustomAssets/Items/TobogangCrazyTobobot.asset", 0, Levels.LevelTypes.None, null, item => {
+        ContentLoader.Register(new CustomItem(TobogangItems.CRAZY_TOBOBOT, "Assets/CustomAssets/Items/TobogangCrazyTobobot.asset",  item => {
             var script = item.spawnPrefab.AddComponent<TobogangCrazyTobobot>();
             script.itemProperties = item;
         }));
 
-        ContentLoader.Register(new ScrapItem(TobogangItems.BUTINGUE, "Assets/CustomAssets/Items/TobogangButingue.asset", 1000, Levels.LevelTypes.All, null, (Item item) => {
+        ContentLoader.Register(new ScrapItem(TobogangItems.BUTINGUE, "Assets/CustomAssets/Items/TobogangButingue.asset", 10, Levels.LevelTypes.All, null, (Item item) => {
             var script = item.spawnPrefab.AddComponent<TobogangButingue>();
             script.itemProperties = item;
         }));
