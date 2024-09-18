@@ -1,9 +1,11 @@
 ﻿using GameNetcodeStuff;
+using LethalLib.Modules;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using HarmonyLib;
 using TMPro;
 using TobogangMod.Model;
 using TobogangMod.Patches;
@@ -45,11 +47,13 @@ namespace TobogangMod.Scripts
         private Dictionary<string, ClaimInfo> _playerClaims = [];
         private Dictionary<string, BetInfo> _playerBets = [];
         public Dictionary<string, int> PlayerProfits = [];
+        public HashSet<ulong> DiscoPlayers = [];
 
         private TextMeshProUGUI? _localPlayerCoinguesDisplay = null;
         private TextMeshProUGUI? _localPlayerCoinguesDisplayS = null;
 
         private GameObject _explosionPrefab = null!;
+        private GameObject _discoPrefab = null!;
 
         public static void Init()
         {
@@ -73,6 +77,11 @@ namespace TobogangMod.Scripts
 
             _explosionPrefab = GameObject.Instantiate(StartOfRound.Instance.explosionPrefab);
             _explosionPrefab.SetActive(false);
+
+            _discoPrefab = GameObject.Instantiate(StartOfRound.Instance.unlockablesList.unlockables[(int)UnlockableIds.DiscoBall].prefabObject, Vector3.zero, Quaternion.identity);
+            _discoPrefab.SetActive(false);
+            Destroy(_discoPrefab.GetComponent<AutoParentToShip>());
+            Destroy(_discoPrefab.GetComponent<NetworkObject>());
 
             var audio = _explosionPrefab.GetComponentInChildren<AudioSource>();
             audio.maxDistance = 50f;
@@ -824,6 +833,69 @@ namespace TobogangMod.Scripts
 
                 yield return new WaitForSeconds(2f);
             }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SetPlayerDiscoServerRpc(NetworkObjectReference playerRef, bool isDisco)
+        {
+            if (isDisco)
+            {
+                DiscoPlayers.Add(playerRef.NetworkObjectId);
+            }
+            else
+            {
+                DiscoPlayers.Remove(playerRef.NetworkObjectId);
+            }
+
+            SetPlayerDiscoClientRpc(playerRef, DiscoPlayers.ToArray());
+        }
+
+        [ClientRpc]
+        private void SetPlayerDiscoClientRpc(NetworkObjectReference playerRef, ulong[] allDiscoPlayers)
+        {
+            DiscoPlayers.Clear();
+            foreach (var discoPlayer in allDiscoPlayers)
+            {
+                DiscoPlayers.Add(discoPlayer);
+            }
+
+            if (!playerRef.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            var player = playerNet.gameObject.GetComponent<PlayerControllerB>();
+            var parent = player.transform.Find("ScavengerModel/metarig/spine/spine.001/spine.002/spine.003/UpperSpinePoint");
+
+            if (allDiscoPlayers.Contains(playerNet.NetworkObjectId))
+            {
+                var discoContainer = GameObject.Instantiate(_discoPrefab, Vector3.zero, Quaternion.identity);
+
+                if (discoContainer == null)
+                {
+                    return;
+                }
+
+                discoContainer.transform.SetParent(parent);
+                discoContainer.transform.rotation = Quaternion.Euler(84.2214f, 180.8894f, 358.59f);
+                discoContainer.transform.localPosition = new Vector3(0f, 0.3959f, 0f);
+                var discoBall = discoContainer.transform.Find("AnimContainer/DiscoBall");
+                discoBall.rotation = Quaternion.identity;
+                discoBall.localPosition = Vector3.zero;
+                discoBall.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+                discoContainer.SetActive(true);
+            }
+            else
+            {
+                StartCoroutine(WaitAndDestroyDisco(parent));
+            }
+        }
+
+        private IEnumerator WaitAndDestroyDisco(Transform parent)
+        {
+            yield return new WaitForSeconds(0.3f);
+
+            Destroy(parent.gameObject.GetComponentInChildren<CozyLights>().transform.parent.gameObject);
         }
     }
 }

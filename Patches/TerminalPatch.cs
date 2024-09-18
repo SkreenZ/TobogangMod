@@ -11,6 +11,7 @@ using Unity.Netcode;
 using UnityEngine;
 using static Unity.Audio.Handle;
 using NetworkManager = Unity.Netcode.NetworkManager;
+using Random = UnityEngine.Random;
 
 namespace TobogangMod.Patches
 {
@@ -50,6 +51,7 @@ namespace TobogangMod.Patches
         private static readonly TerminalNode MOTHERLODE_NODE = ScriptableObject.CreateInstance<TerminalNode>();
         private static readonly TerminalNode DAMAGE_NODE = ScriptableObject.CreateInstance<TerminalNode>();
         private static readonly TerminalNode FINISH_BET_NODE = ScriptableObject.CreateInstance<TerminalNode>();
+        private static readonly TerminalNode REROLL_NODE = ScriptableObject.CreateInstance<TerminalNode>();
 #endif
 
         private static readonly Dictionary<TerminalNode, List<string>> CUSTOM_TERMINAL_NODES = new()
@@ -58,6 +60,7 @@ namespace TobogangMod.Patches
             { MOTHERLODE_NODE, ["motherlode"] },
             { DAMAGE_NODE, ["damage"] },
             { FINISH_BET_NODE, ["finishbet"] },
+            { REROLL_NODE, ["reroll", "roll"] },
 #endif
             { CRAMPTES_NODE, ["cramptes", "cramptés", "crampte", "crampté"] },
             { COINGUES_NODE, ["coingues", "coingue", "coingu", "coing", "coin"] },
@@ -296,6 +299,24 @@ namespace TobogangMod.Patches
                 node.displayText = "Finish bet";
                 CoinguesManager.Instance.PlayerProfits[CoinguesManager.GetPlayerId(player)] = 1000;
                 CoinguesManager.Instance.FinishBetcoingueServerRpc();
+            }
+            else if (__result == REROLL_NODE)
+            {
+                var oldSeed = StartOfRound.Instance.randomMapSeed;
+                StartOfRound.Instance.randomMapSeed = Random.Range(1, Int32.MaxValue);
+                __instance.RotateShipDecorSelection();
+                StartOfRound.Instance.randomMapSeed = oldSeed;
+
+                int i = 0;
+                foreach (var unlockable in StartOfRound.Instance.unlockablesList.unlockables)
+                {
+                    TobogangMod.Logger.LogDebug($"Unlockable {unlockable.unlockableName} ({i++})");
+                }
+
+            }
+            else if (args[0] == "tete")
+            {
+                CoinguesManager.Instance.SetPlayerDiscoServerRpc(player.NetworkObject, !CoinguesManager.Instance.DiscoPlayers.Contains(player.NetworkObjectId));
             }
 #endif
             else

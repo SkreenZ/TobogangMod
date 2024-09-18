@@ -12,6 +12,11 @@ namespace TobogangMod.Patches
         Company = 3
     }
 
+    public enum UnlockableIds
+    {
+        DiscoBall = 27
+    }
+
     [HarmonyPatch(typeof(StartOfRound))]
     public class StartOfRoundPatch
     {
