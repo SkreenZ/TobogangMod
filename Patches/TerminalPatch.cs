@@ -324,6 +324,10 @@ namespace TobogangMod.Patches
             {
                 CoinguesManager.Instance.SwapAllPlayersServerRpc();
             }
+            else if (args[0] == "sun")
+            {
+                CoinguesManager.Instance.SetSunExplodingServerRpc();
+            }
 #endif
             else
             {

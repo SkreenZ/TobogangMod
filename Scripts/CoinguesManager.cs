@@ -56,6 +56,14 @@ namespace TobogangMod.Scripts
         private GameObject _explosionPrefab = null!;
         private GameObject _discoPrefab = null!;
 
+        public bool IsSunExploding { get; private set; } = false;
+        public float CurrentSunIntensity { get; private set; } = 0f;
+        private float _currentSunExplosionTime = 0f;
+        private float _sunLerp = 0f;
+
+        private static  readonly AnimationCurve SUN_EXPLOSION_CURVE =
+            new(new Keyframe(0f, 0f), new Keyframe(0.8f, 0.008f), new Keyframe(1f, 1f));
+
         public static void Init()
         {
             NetworkPrefab = LethalLib.Modules.NetworkPrefabs.CloneNetworkPrefab(TobogangMod.NetworkPrefab, "CoinguesManager");
@@ -75,9 +83,6 @@ namespace TobogangMod.Scripts
                 TobogangMod.Logger.LogDebug($"{item.itemName} ({item.itemId}): {item.minValue} / {item.maxValue}, {item.isScrap}");
             }
 #endif
-
-
-
             _explosionPrefab = GameObject.Instantiate(StartOfRound.Instance.explosionPrefab);
             _explosionPrefab.SetActive(false);
 
@@ -126,6 +131,8 @@ namespace TobogangMod.Scripts
 
         void Update()
         {
+            UpdateSunExplosion();
+
             if (_localPlayerCoinguesDisplay == null || _localPlayerCoinguesDisplayS == null)
             {
                 if (PlayerControllerPatch.LocalPlayerCanvas != null)
@@ -142,6 +149,21 @@ namespace TobogangMod.Scripts
             var amount = GetCoingues(StartOfRound.Instance.localPlayerController);
             _localPlayerCoinguesDisplay.text = $"{amount} coingue";
             _localPlayerCoinguesDisplayS.gameObject.SetActive(amount > 1);
+        }
+
+        private void UpdateSunExplosion()
+        {
+            if (!IsSunExploding)
+            {
+                return;
+            }
+
+            _currentSunExplosionTime = Mathf.Lerp(0f, 1f, _sunLerp);
+            _sunLerp += 0.05f * Time.deltaTime;
+
+            CurrentSunIntensity = SUN_EXPLOSION_CURVE.Evaluate(_currentSunExplosionTime) * TimeOfDayPatch.MAX_INTENSITY;
+
+            TobogangMod.Logger.LogDebug(CurrentSunIntensity);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -965,6 +987,56 @@ namespace TobogangMod.Scripts
             {
                 HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
             }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SetSunExplodingServerRpc()
+        {
+            SetSunExplodingClientRpc();
+        }
+
+        [ClientRpc]
+        private void SetSunExplodingClientRpc()
+        {
+            StartCoroutine(SunExplosion());
+        }
+
+        private IEnumerator SunExplosion()
+        {
+            var oldVolume = HUDManager.Instance.UIAudio.volume;
+
+            HUDManager.Instance.UIAudio.volume = 1f;
+            HUDManager.Instance.UIAudio.PlayOneShot(TobogangMod.SunExplosionClip);
+            IsSunExploding = true;
+
+            yield return new WaitForSeconds(17.5f);
+
+            StartOfRound.Instance.localPlayerController.KillPlayer(Vector3.zero, true, CauseOfDeath.Burning);
+
+            foreach (var enemy in FindObjectsOfType<EnemyAI>())
+            {
+                enemy.KillEnemy();
+            }
+
+            yield return new WaitForSeconds(12.5f);
+
+            var elapsedTime = 0f;
+
+            while (elapsedTime < 5f)
+            {
+                HUDManager.Instance.UIAudio.volume = Mathf.Lerp(1f, 0f, elapsedTime / 5f);
+                elapsedTime += Time.deltaTime;
+
+                yield return null;
+            }
+
+            HUDManager.Instance.UIAudio.Stop(true);
+            HUDManager.Instance.UIAudio.volume = oldVolume;
+
+            IsSunExploding = false;
+            _currentSunExplosionTime = 0f;
+            CurrentSunIntensity = 0f;
+            TimeOfDay.Instance.sunAnimator.enabled = true;
         }
     }
 }

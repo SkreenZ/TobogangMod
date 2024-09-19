@@ -44,6 +44,7 @@ public class TobogangMod : BaseUnityPlugin
     public static AudioClip SuccessClip { get; private set; } = null!;
     public static AudioClip NukeAlarmClip { get; private set; } = null!;
     public static AudioClip ShipTeleporterBeamClip { get; private set; } = null!;
+    public static AudioClip SunExplosionClip { get; private set; } = null!;
 
     public static GameObject ConfettiPrefab { get; private set; } = null!;
     public static GameObject TobogganPrefab { get; private set; } = null!;
@@ -72,6 +73,7 @@ public class TobogangMod : BaseUnityPlugin
         SuccessClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/success.mp3");
         NukeAlarmClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/nuke_alarm.mp3");
         ShipTeleporterBeamClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/ship_teleporter_beam.mp3");
+        SunExplosionClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/sun_explosion.mp3");
 
         ConfettiPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/ConfettiPrefab.prefab");
         ConfettiPrefab.AddComponent<AutoDespawnScript>();
