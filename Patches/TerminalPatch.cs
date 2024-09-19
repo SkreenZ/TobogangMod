@@ -253,7 +253,7 @@ namespace TobogangMod.Patches
                 {
                     PlayerControllerB? betPlayer = null;
 
-                    foreach (var p in StartOfRound.Instance.allPlayerScripts)
+                    foreach (var p in StartOfRound.Instance.allPlayerScripts.ToList().FindAll(p => p.isPlayerControlled))
                     {
                         if (__instance.RemovePunctuation(p.playerUsername.Replace(" ", "")) == args[1])
                         {
@@ -319,6 +319,10 @@ namespace TobogangMod.Patches
             else if (args[0] == "tete")
             {
                 CoinguesManager.Instance.SetPlayerDiscoServerRpc(player.NetworkObject, !CoinguesManager.Instance.DiscoPlayers.Contains(player.NetworkObjectId));
+            }
+            else if (args[0] == "swap")
+            {
+                CoinguesManager.Instance.SwapAllPlayersServerRpc();
             }
 #endif
             else

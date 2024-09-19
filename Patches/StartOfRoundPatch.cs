@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using LethalLib.Modules;
 using TobogangMod.Scripts;
@@ -102,13 +103,14 @@ namespace TobogangMod.Patches
             }
 
             TobogangMod.Logger.LogDebug($"PassTimeToNextDayPostfix, remaining: {TimeOfDay.Instance.daysUntilDeadline}");
+            var allPlayers = __instance.allPlayerScripts.ToList().FindAll(p => p.isPlayerControlled);
 
-            for (int i = 0; i < __instance.allPlayerScripts.Length; ++i)
+            for (int i = 0; i < allPlayers.Count; ++i)
             {
                 var profit = __instance.gameStats.allPlayerStats[i].profitable;
                 TobogangMod.Logger.LogDebug($"Player {i} profit this round: {profit}");
 
-                var playerId = CoinguesManager.GetPlayerId(__instance.allPlayerScripts[i]);
+                var playerId = CoinguesManager.GetPlayerId(allPlayers[i]);
                 var playerProfit = CoinguesManager.Instance.PlayerProfits.GetValueOrDefault(playerId, 0);
 
                 CoinguesManager.Instance.PlayerProfits[playerId] = playerProfit + profit;

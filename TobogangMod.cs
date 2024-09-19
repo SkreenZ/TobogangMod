@@ -32,6 +32,7 @@ public class TobogangMod : BaseUnityPlugin
         public static readonly string FUNKY_BOULE = "FunkyBoule";
         public static readonly string BUTINGUE = "Butingue";
         public static readonly string NUKE = "Nuke";
+        public static readonly string SWAP = "Swap";
     }
 
     public static readonly ulong NULL_OBJECT = ulong.MaxValue;
@@ -42,6 +43,7 @@ public class TobogangMod : BaseUnityPlugin
     public static AudioClip ConfettiClip { get; private set; } = null!;
     public static AudioClip SuccessClip { get; private set; } = null!;
     public static AudioClip NukeAlarmClip { get; private set; } = null!;
+    public static AudioClip ShipTeleporterBeamClip { get; private set; } = null!;
 
     public static GameObject ConfettiPrefab { get; private set; } = null!;
     public static GameObject TobogganPrefab { get; private set; } = null!;
@@ -69,6 +71,7 @@ public class TobogangMod : BaseUnityPlugin
         ConfettiClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/confetti.mp3");
         SuccessClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/success.mp3");
         NukeAlarmClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/nuke_alarm.mp3");
+        ShipTeleporterBeamClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/ship_teleporter_beam.mp3");
 
         ConfettiPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/ConfettiPrefab.prefab");
         ConfettiPrefab.AddComponent<AutoDespawnScript>();
@@ -138,6 +141,11 @@ public class TobogangMod : BaseUnityPlugin
 
         ContentLoader.Register(new CustomItem(TobogangItems.NUKE, "Assets/CustomAssets/Items/TobogangNuke.asset", item => {
             var script = item.spawnPrefab.AddComponent<TobogangNuke>();
+            script.itemProperties = item;
+        }));
+
+        ContentLoader.Register(new CustomItem(TobogangItems.SWAP, "Assets/CustomAssets/Items/TobogangSwap.asset", item => {
+            var script = item.spawnPrefab.AddComponent<TobogangSwap>();
             script.itemProperties = item;
         }));
 

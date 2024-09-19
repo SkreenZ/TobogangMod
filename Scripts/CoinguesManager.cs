@@ -14,6 +14,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 using static LethalLib.Modules.ContentLoader;
+using Random = UnityEngine.Random;
 
 namespace TobogangMod.Scripts
 {
@@ -74,6 +75,8 @@ namespace TobogangMod.Scripts
                 TobogangMod.Logger.LogDebug($"{item.itemName} ({item.itemId}): {item.minValue} / {item.maxValue}, {item.isScrap}");
             }
 #endif
+
+
 
             _explosionPrefab = GameObject.Instantiate(StartOfRound.Instance.explosionPrefab);
             _explosionPrefab.SetActive(false);
@@ -917,6 +920,51 @@ namespace TobogangMod.Scripts
             yield return new WaitForSeconds(0.3f);
 
             Destroy(parent.gameObject.GetComponentInChildren<CozyLights>().transform.parent.gameObject);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SwapAllPlayersServerRpc()
+        {
+            var allPlayers = StartOfRound.Instance.allPlayerScripts.ToList().FindAll(p => p.isPlayerControlled).OrderBy(_ => Random.Range(0f, 1f)).ToList();
+            var allPositions = allPlayers.ConvertAll(p => p.transform.position);
+            var lastTransform = allPositions.Last();
+            allPositions.RemoveAt(allPositions.Count - 1);
+            allPositions.Insert(0, lastTransform);
+
+            SwapAllPlayersClientRpc(allPlayers.ConvertAll(p => new NetworkObjectReference(p.NetworkObject)).ToArray(), allPositions.ToArray());
+        }
+
+        [ClientRpc]
+        private void SwapAllPlayersClientRpc(NetworkObjectReference[] allPlayersRefs, Vector3[] allPositions)
+        {
+            List<PlayerControllerB> allPlayers = [];
+
+            foreach (var playerRef in allPlayersRefs)
+            {
+                if (!playerRef.TryGet(out var playerNet))
+                {
+                    return;
+                }
+
+                allPlayers.Add(playerNet.gameObject.GetComponent<PlayerControllerB>());
+            }
+
+            for (int i = 0; i < allPlayers.Count; i++)
+            {
+                TeleportPlayer(allPlayers[i], allPositions[i]);
+            }
+        }
+
+        public void TeleportPlayer(PlayerControllerB player, Vector3 position)
+        {
+            player.TeleportPlayer(position);
+            player.beamOutParticle.Play();
+            player.movementAudio.PlayOneShot(TobogangMod.ShipTeleporterBeamClip);
+
+            if (player == StartOfRound.Instance.localPlayerController)
+            {
+                HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
+            }
         }
     }
 }
