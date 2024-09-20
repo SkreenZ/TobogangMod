@@ -33,6 +33,8 @@ public class TobogangMod : BaseUnityPlugin
         public static readonly string BUTINGUE = "Butingue";
         public static readonly string NUKE = "Nuke";
         public static readonly string SWAP = "Swap";
+        public static readonly string ANNIHILATION = "Annihilation";
+        public static readonly string ARMAGEDDON = "Armageddon";
     }
 
     public static readonly ulong NULL_OBJECT = ulong.MaxValue;
@@ -45,6 +47,8 @@ public class TobogangMod : BaseUnityPlugin
     public static AudioClip NukeAlarmClip { get; private set; } = null!;
     public static AudioClip ShipTeleporterBeamClip { get; private set; } = null!;
     public static AudioClip SunExplosionClip { get; private set; } = null!;
+    public static AudioClip DistantExplosionClip { get; private set; } = null!;
+    public static AudioClip ArmageddonSirenClip { get; private set; } = null!;
 
     public static GameObject ConfettiPrefab { get; private set; } = null!;
     public static GameObject TobogganPrefab { get; private set; } = null!;
@@ -74,6 +78,8 @@ public class TobogangMod : BaseUnityPlugin
         NukeAlarmClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/nuke_alarm.mp3");
         ShipTeleporterBeamClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/ship_teleporter_beam.mp3");
         SunExplosionClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/sun_explosion.mp3");
+        DistantExplosionClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/distant_explosion.mp3");
+        ArmageddonSirenClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/armageddon_siren.wav");
 
         ConfettiPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/ConfettiPrefab.prefab");
         ConfettiPrefab.AddComponent<AutoDespawnScript>();
@@ -148,6 +154,16 @@ public class TobogangMod : BaseUnityPlugin
 
         ContentLoader.Register(new CustomItem(TobogangItems.SWAP, "Assets/CustomAssets/Items/TobogangSwap.asset", item => {
             var script = item.spawnPrefab.AddComponent<TobogangSwap>();
+            script.itemProperties = item;
+        }));
+
+        ContentLoader.Register(new CustomItem(TobogangItems.ARMAGEDDON, "Assets/CustomAssets/Items/TobogangArmageddon.asset", item => {
+            var script = item.spawnPrefab.AddComponent<TobogangArmageddon>();
+            script.itemProperties = item;
+        }));
+
+        ContentLoader.Register(new CustomItem(TobogangItems.ANNIHILATION, "Assets/CustomAssets/Items/TobogangAnnihilation.asset", item => {
+            var script = item.spawnPrefab.AddComponent<TobogangAnnihilation>();
             script.itemProperties = item;
         }));
 

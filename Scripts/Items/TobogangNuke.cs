@@ -11,7 +11,6 @@ namespace TobogangMod.Scripts.Items
 {
     public class TobogangNuke : TobogangItem
     {
-
         TobogangNuke()
         {
             TobogangItemId = TobogangMod.TobogangItems.NUKE;

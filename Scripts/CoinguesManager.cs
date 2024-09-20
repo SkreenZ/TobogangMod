@@ -9,12 +9,15 @@ using HarmonyLib;
 using TMPro;
 using TobogangMod.Model;
 using TobogangMod.Patches;
+using Unity.AI.Navigation;
 using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 using static LethalLib.Modules.ContentLoader;
 using Random = UnityEngine.Random;
+using UnityEngine.AI;
+using DunGen;
 
 namespace TobogangMod.Scripts
 {
@@ -37,6 +40,7 @@ namespace TobogangMod.Scripts
         public static readonly int CRAMPTES_PROC_MALUS = 100;
         public static readonly float SCRAP_COINGUES_MULTIPLIER = 0.5f;
         public static readonly float CLAIM_TIME = 360f; // 12 A.M
+        private const float ARMAGEDDON_RANGE = 100f;
 
         public static CoinguesManager Instance { get; private set; }
         public static GameObject NetworkPrefab { get; private set; }
@@ -60,6 +64,8 @@ namespace TobogangMod.Scripts
         public float CurrentSunIntensity { get; private set; } = 0f;
         private float _currentSunExplosionTime = 0f;
         private float _sunLerp = 0f;
+
+        private AudioSource _alarmAudio = null!;
 
         private static  readonly AnimationCurve SUN_EXPLOSION_CURVE =
             new(new Keyframe(0f, 0f), new Keyframe(0.8f, 0.008f), new Keyframe(1f, 1f));
@@ -85,6 +91,7 @@ namespace TobogangMod.Scripts
 #endif
             _explosionPrefab = GameObject.Instantiate(StartOfRound.Instance.explosionPrefab);
             _explosionPrefab.SetActive(false);
+            _explosionPrefab.AddComponent<AutoDestroy>();
 
             _discoPrefab = GameObject.Instantiate(StartOfRound.Instance.unlockablesList.unlockables[(int)UnlockableIds.DiscoBall].prefabObject, Vector3.zero, Quaternion.identity);
             _discoPrefab.SetActive(false);
@@ -95,6 +102,14 @@ namespace TobogangMod.Scripts
             audio.maxDistance = 50f;
             audio.spatialBlend = 1f;
             audio.rolloffMode = AudioRolloffMode.Linear;
+            var farAudio = audio.gameObject.AddComponent<FarSound>();
+            farAudio.Clip = TobogangMod.DistantExplosionClip;
+
+            var shipTransform = StartOfRound.Instance.middleOfShipNode.transform;
+            var alarm = Instantiate(new GameObject("TobogangAlarm"), shipTransform.position + Vector3.up * 10, Quaternion.identity, shipTransform);
+            _alarmAudio = alarm.AddComponent<AudioSource>();
+            _alarmAudio.spatialBlend = 1f;
+            _alarmAudio.minDistance = 0f;
 
             if (IsServer)
             {
@@ -162,8 +177,6 @@ namespace TobogangMod.Scripts
             _sunLerp += 0.05f * Time.deltaTime;
 
             CurrentSunIntensity = SUN_EXPLOSION_CURVE.Evaluate(_currentSunExplosionTime) * TimeOfDayPatch.MAX_INTENSITY;
-
-            TobogangMod.Logger.LogDebug(CurrentSunIntensity);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -827,19 +840,27 @@ namespace TobogangMod.Scripts
             }
         }
 
+        public void PlayAlarmSound(AudioClip clip, bool hearInside = false, float range = 1000f)
+        {
+            _alarmAudio.maxDistance = hearInside ? 1000f : range;
+
+            if (hearInside)
+            {
+                _alarmAudio.rolloffMode = AudioRolloffMode.Custom;
+                AnimationCurve distanceCurve = new AnimationCurve(new[] { new Keyframe(0, 1), new Keyframe(0.1f, 0.1f), new Keyframe(1, 0) });
+                _alarmAudio.SetCustomCurve(AudioSourceCurveType.CustomRolloff, distanceCurve);
+            }
+            else
+            {
+                _alarmAudio.rolloffMode = AudioRolloffMode.Linear;
+            }
+
+            _alarmAudio.PlayOneShot(clip);
+        }
+
         public void StartNuke()
         {
-            var ship = GameObject.Find("HangarShip");
-            var alarm = Instantiate(new GameObject(), ship.transform.position + Vector3.up * 10, Quaternion.identity, ship.transform);
-            var alarmAudio = alarm.AddComponent<AudioSource>();
-            alarmAudio.clip = TobogangMod.NukeAlarmClip;
-            alarmAudio.minDistance = 0f;
-            alarmAudio.maxDistance = 1000f;
-            alarmAudio.rolloffMode = AudioRolloffMode.Custom;
-            AnimationCurve distanceCurve = new AnimationCurve(new[] { new Keyframe(0, 1), new Keyframe(0.1f, 0.1f), new Keyframe(1, 0) });
-            alarmAudio.SetCustomCurve(AudioSourceCurveType.CustomRolloff, distanceCurve);
-            alarmAudio.spatialBlend = 1f;
-            alarmAudio.Play();
+            PlayAlarmSound(TobogangMod.NukeAlarmClip, true);
 
             StartCoroutine(Nuke());
         }
@@ -848,15 +869,10 @@ namespace TobogangMod.Scripts
         {
             yield return new WaitForSeconds(TobogangMod.NukeAlarmClip.length);
 
-            while (!StartOfRound.Instance.inShipPhase)
+            foreach (var enemy in GameObject.FindObjectsOfType<EnemyAI>())
             {
-                foreach (var enemy in GameObject.FindObjectsOfType<EnemyAI>())
-                {
-                    Landmine.SpawnExplosion(enemy.transform.position, true, 4f, 6f, overridePrefab: _explosionPrefab);
-                    yield return new WaitForSeconds(0.1f);
-                }
-
-                yield return new WaitForSeconds(2f);
+                Landmine.SpawnExplosion(enemy.transform.position, true, 4f, 6f, overridePrefab: _explosionPrefab);
+                yield return new WaitForSeconds(0.2f);
             }
         }
 
@@ -1037,6 +1053,80 @@ namespace TobogangMod.Scripts
             _currentSunExplosionTime = 0f;
             CurrentSunIntensity = 0f;
             TimeOfDay.Instance.sunAnimator.enabled = true;
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void ArmageddonServerRpc()
+        {
+            StartCoroutine(ArmageddonExplosions());
+            ArmageddonClientRpc();
+        }
+
+        [ClientRpc]
+        private void ArmageddonClientRpc()
+        {
+            StartCoroutine(ArmageddonSiren());
+        }
+
+        private IEnumerator ArmageddonSiren()
+        {
+            while (!StartOfRound.Instance.inShipPhase)
+            {
+                PlayAlarmSound(TobogangMod.ArmageddonSirenClip, false, ARMAGEDDON_RANGE + 10f);
+
+                yield return new WaitForSeconds(TobogangMod.ArmageddonSirenClip.length);
+            }
+        }
+
+        private IEnumerator ArmageddonExplosions()
+        {
+            if (!IsServer)
+            {
+                yield break;
+            }
+
+            yield return new WaitForSeconds(TobogangMod.ArmageddonSirenClip.length * 2f);
+
+            while (!StartOfRound.Instance.inShipPhase)
+            {
+                var point = GetRandomPointAroundShip(ARMAGEDDON_RANGE);
+
+                if (point.HasValue)
+                {
+                    SpawnArmageddonExplosionClientRpc(point.Value);
+                }
+
+                yield return new WaitForSeconds(0.25f);
+            }
+        }
+
+        [ClientRpc]
+        private void SpawnArmageddonExplosionClientRpc(Vector3 location)
+        {
+            Landmine.SpawnExplosion(location, true, 6f, 7f, overridePrefab:_explosionPrefab);
+        }
+
+        public Vector3? GetRandomPointAroundShip(float radius)
+        {
+            var center = StartOfRound.Instance.middleOfShipNode.position;
+
+            Vector3? pos = null;
+            int tries = 0, maxTries = 100;
+
+            while (tries < maxTries && (!pos.HasValue || StartOfRound.Instance.shipBounds.bounds.Contains(pos.Value)))
+            {
+                Vector3 randomDirection = Random.insideUnitSphere * radius;
+                randomDirection += center;
+
+                if (NavMesh.SamplePosition(randomDirection, out var hit, radius, NavMesh.AllAreas))
+                {
+                    pos = hit.position;
+                }
+
+                tries++;
+            }
+
+            return pos;
         }
     }
 }

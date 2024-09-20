@@ -328,6 +328,10 @@ namespace TobogangMod.Patches
             {
                 CoinguesManager.Instance.SetSunExplodingServerRpc();
             }
+            else if (args[0] == "arma")
+            {
+                CoinguesManager.Instance.ArmageddonServerRpc();
+            }
 #endif
             else
             {

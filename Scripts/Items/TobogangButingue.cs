@@ -13,25 +13,29 @@ namespace TobogangMod.Scripts.Items
     {
         private enum Loot
         {
-            Coingues20,
             Coingues50,
             Coingues100,
             Cramptes,
             Funky,
             RPJoel,
             TaGueule,
+            Nuke,
+            Swap,
+            Armageddon,
             InstantCramptes
         }
 
         private static readonly Dictionary<Loot, int> LOOTS_PROBABILITIES = new()
         {
-            { Loot.Coingues20, 60 },
-            { Loot.Coingues50, 40 },
-            { Loot.Coingues100, 10 },
+            { Loot.Coingues50, 60 },
+            { Loot.Coingues100, 40 },
             { Loot.Cramptes, 10 },
             { Loot.Funky, 25 },
             { Loot.RPJoel, 25 },
             { Loot.TaGueule, 25 },
+            { Loot.Swap, 15 },
+            { Loot.Nuke, 3 },
+            { Loot.Armageddon, 1 },
             { Loot.InstantCramptes, 5 },
         };
 
@@ -78,12 +82,6 @@ namespace TobogangMod.Scripts.Items
 
             switch (loot)
             {
-                case Loot.Coingues20:
-                {
-                    CoinguesManager.Instance.AddCoinguesServerRpc(player.NetworkObject, 20);
-                    break;
-                }
-
                 case Loot.Coingues50:
                 {
                     CoinguesManager.Instance.AddCoinguesServerRpc(player.NetworkObject, 50);
@@ -111,6 +109,24 @@ namespace TobogangMod.Scripts.Items
                 case Loot.TaGueule:
                 {
                     CoinguesManager.Instance.GiveTobogangItemToPlayerServerRpc(TobogangMod.TobogangItems.TA_GUEULE, player.NetworkObject);
+                    break;
+                }
+
+                case Loot.Swap:
+                {
+                    CoinguesManager.Instance.GiveTobogangItemToPlayerServerRpc(TobogangMod.TobogangItems.SWAP, player.NetworkObject);
+                    break;
+                }
+
+                case Loot.Armageddon:
+                {
+                    CoinguesManager.Instance.GiveTobogangItemToPlayerServerRpc(TobogangMod.TobogangItems.ARMAGEDDON, player.NetworkObject);
+                    break;
+                }
+
+                case Loot.Nuke:
+                {
+                    CoinguesManager.Instance.GiveTobogangItemToPlayerServerRpc(TobogangMod.TobogangItems.NUKE, player.NetworkObject);
                     break;
                 }
 

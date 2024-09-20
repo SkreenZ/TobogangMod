@@ -45,9 +45,8 @@ namespace TobogangMod.Patches
                 }
 
                 var d = Vector3.Distance(collider.transform.position, player.transform.position);
-                var randomSound = RandomSound.Instances[player.NetworkObjectId];
 
-                if (randomSound != null && randomSound.IsCrazy && (distance < 0f || d < distance))
+                if (CoinguesManager.Instance.DiscoPlayers.Contains(player.NetworkObjectId) && (distance < 0f || d < distance))
                 {
                     playerInRange = player;
                     distance = d;
