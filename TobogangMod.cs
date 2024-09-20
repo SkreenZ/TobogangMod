@@ -52,6 +52,7 @@ public class TobogangMod : BaseUnityPlugin
 
     public static GameObject ConfettiPrefab { get; private set; } = null!;
     public static GameObject TobogganPrefab { get; private set; } = null!;
+    public static GameObject TrashPrefab { get; private set; } = null!;
 
     /* Instances */
 
@@ -62,6 +63,7 @@ public class TobogangMod : BaseUnityPlugin
     public static GameObject NetworkPrefab { get; private set; } = null!;
     public static ContentLoader ContentLoader = null!;
     public static Dictionary<string, GameObject> Prefabs = new();
+    public static UnlockablesList Unlockables = null!;
 
     private void Awake()
     {
@@ -81,6 +83,8 @@ public class TobogangMod : BaseUnityPlugin
         DistantExplosionClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/distant_explosion.mp3");
         ArmageddonSirenClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/armageddon_siren.wav");
 
+        Unlockables = MainAssetBundle.LoadAsset<UnlockablesList>("Assets/CustomAssets/TobogangUnlockables.asset");
+
         ConfettiPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomAssets/ConfettiPrefab.prefab");
         ConfettiPrefab.AddComponent<AutoDespawnScript>();
         NetworkPrefabs.RegisterNetworkPrefab(ConfettiPrefab);
@@ -88,6 +92,10 @@ public class TobogangMod : BaseUnityPlugin
         TobogganPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomPrefabs/TobogganPrefab.prefab");
         TobogganPrefab.AddComponent<TobogganScript>();
         NetworkPrefabs.RegisterNetworkPrefab(TobogganPrefab);
+
+        TrashPrefab = MainAssetBundle.LoadAsset<GameObject>("Assets/CustomPrefabs/TrashPrefab.prefab");
+        TrashPrefab.AddComponent<TrashScript>();
+        NetworkPrefabs.RegisterNetworkPrefab(TrashPrefab);
 
         ContentLoader = new ContentLoader(Instance.Info, MainAssetBundle, (content, prefab) => {
             Prefabs.Add(content.ID, prefab);

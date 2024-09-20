@@ -48,6 +48,8 @@ namespace TobogangMod.Scripts
         public List<PlayerControllerB> MutedPlayers { get; private set; } = [];
         public List<PlayerControllerB> DeafenedPlayers { get; private set; } = [];
 
+        public List<int> TobogangUnlockableIds { get; private set; } = [];
+
         private CoinguesStorage _coingues = new();
         private Dictionary<string, ClaimInfo> _playerClaims = [];
         private Dictionary<string, BetInfo> _playerBets = [];
@@ -113,29 +115,46 @@ namespace TobogangMod.Scripts
 
             if (IsServer)
             {
-                var coinguesPrefix = TobogangMod.Instance.Info.Metadata.Name + "_Coingues_";
-                var claimPrefix = TobogangMod.Instance.Info.Metadata.Name + "_ClaimStreak_";
-
-                foreach (var key in ES3.GetKeys(GameNetworkManager.Instance.currentSaveFileName))
+                if (ES3.FileExists(GameNetworkManager.Instance.currentSaveFileName))
                 {
-                    if (key == null || (!key.StartsWith(coinguesPrefix) && !key.StartsWith(claimPrefix)))
+                    var coinguesPrefix = TobogangMod.Instance.Info.Metadata.Name + "_Coingues_";
+                    var claimPrefix = TobogangMod.Instance.Info.Metadata.Name + "_ClaimStreak_";
+
+                    foreach (var key in ES3.GetKeys(GameNetworkManager.Instance.currentSaveFileName))
                     {
-                        continue;
+                        if (key == null || (!key.StartsWith(coinguesPrefix) && !key.StartsWith(claimPrefix)))
+                        {
+                            continue;
+                        }
+
+                        if (key.StartsWith(coinguesPrefix))
+                        {
+                            _coingues[key.Substring(coinguesPrefix.Length)] = ES3.Load<int>(key, GameNetworkManager.Instance.currentSaveFileName, 0);
+                        }
+                        else if (key.StartsWith(claimPrefix))
+                        {
+                            var streak = ES3.Load<int>(key, GameNetworkManager.Instance.currentSaveFileName, 0);
+
+                            _playerClaims[key.Substring(claimPrefix.Length)] = new ClaimInfo { ClaimedToday = false, Streak = streak };
+                        }
                     }
 
-                    if (key.StartsWith(coinguesPrefix))
-                    {
-                        _coingues[key.Substring(coinguesPrefix.Length)] = ES3.Load<int>(key, GameNetworkManager.Instance.currentSaveFileName, 0);
-                    }
-                    else if (key.StartsWith(claimPrefix))
-                    {
-                        var streak = ES3.Load<int>(key, GameNetworkManager.Instance.currentSaveFileName, 0);
-
-                        _playerClaims[key.Substring(claimPrefix.Length)] = new ClaimInfo { ClaimedToday = false, Streak = streak };
-                    }
+                    TobogangMod.Logger.LogDebug($"Loaded coingues from save: {_coingues}");
                 }
 
-                TobogangMod.Logger.LogDebug($"Loaded coingues from save: {_coingues}");
+                foreach (var unlockable in TobogangMod.Unlockables.unlockables)
+                {
+                    StartOfRound.Instance.unlockablesList.unlockables.Add(unlockable);
+                    TobogangUnlockableIds.Add(StartOfRound.Instance.unlockablesList.unlockables.Count - 1);
+                }
+
+                var trash = Instantiate(TobogangMod.TrashPrefab, StartOfRound.Instance.elevatorTransform.position, Quaternion.identity);
+                var placeable = trash.GetComponentInChildren<PlaceableShipObject>();
+                placeable.placeObjectSFX = GameObject.Find("Terminal").GetComponentInChildren<Terminal>().placeableObject.placeObjectSFX;
+                placeable.unlockableID = TobogangUnlockableIds[0];
+                trash.GetComponent<NetworkObject>().Spawn();
+
+                // ShipBuildModeManager.Instance.PlaceShipObject(trash.gameObject.transform.position, trash.gameObject.transform.rotation.eulerAngles, placeable, false);
 
                 return;
             }
@@ -423,7 +442,6 @@ namespace TobogangMod.Scripts
 
             var grabbable = grabbableNet.GetComponentInChildren<GrabbableObject>();
             grabbable.parentObject = playerNet.GetComponentInChildren<PlayerControllerB>().localItemHolder;
-            grabbable.scrapPersistedThroughRounds = true;
             foreach (var collider in grabbable.gameObject.GetComponentsInChildren<Collider>())
             {
                 collider.enabled = false;
