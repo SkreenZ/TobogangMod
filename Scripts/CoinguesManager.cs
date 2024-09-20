@@ -141,7 +141,6 @@ namespace TobogangMod.Scripts
             }
 
             SyncAllClientsServerRpc();
-
         }
 
         void Update()
@@ -223,6 +222,18 @@ namespace TobogangMod.Scripts
 #if DEBUG
             TobogangMod.Logger.LogDebug($"Set {playerId} bet info: {betPlayerNetId}, {amount}");
 #endif
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void ResetCoinguesServerRpc()
+        {
+            ResetCoinguesClientRpc();
+        }
+
+        [ClientRpc]
+        private void ResetCoinguesClientRpc()
+        {
+            _coingues = new CoinguesStorage();
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -412,6 +423,7 @@ namespace TobogangMod.Scripts
 
             var grabbable = grabbableNet.GetComponentInChildren<GrabbableObject>();
             grabbable.parentObject = playerNet.GetComponentInChildren<PlayerControllerB>().localItemHolder;
+            grabbable.scrapPersistedThroughRounds = true;
             foreach (var collider in grabbable.gameObject.GetComponentsInChildren<Collider>())
             {
                 collider.enabled = false;

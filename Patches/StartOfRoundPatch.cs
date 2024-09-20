@@ -123,5 +123,11 @@ namespace TobogangMod.Patches
                 CoinguesManager.Instance.FinishBetcoingueServerRpc();
             }
         }
+
+        [HarmonyPatch(nameof(StartOfRound.ResetShip)), HarmonyPostfix]
+        private static void ResetShipPostfix(StartOfRound __instance)
+        {
+            CoinguesManager.Instance.ResetCoinguesServerRpc();
+        }
     }
 }
