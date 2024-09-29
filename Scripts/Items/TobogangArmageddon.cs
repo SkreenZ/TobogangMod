@@ -14,6 +14,8 @@ namespace TobogangMod.Scripts.Items
 
         TobogangArmageddon()
         {
+            UsableOnSelf = false;
+
             TobogangItemId = TobogangMod.TobogangItems.ARMAGEDDON;
             CoinguesPrice = 1000;
             Keywords = ["armageddon", "arma", "armagedon", "armaguedon", "armaggedon", "armaggeddon", "armag"];

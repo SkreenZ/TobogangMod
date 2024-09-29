@@ -13,6 +13,8 @@ namespace TobogangMod.Scripts.Items
     {
         TobogangAnnihilation()
         {
+            UsableOnSelf = false;
+
             TobogangItemId = TobogangMod.TobogangItems.ANNIHILATION;
             CoinguesPrice = 9999;
             Keywords = ["annihilation"];

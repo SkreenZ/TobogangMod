@@ -13,6 +13,8 @@ namespace TobogangMod.Scripts.Items
     {
         TobogangNuke()
         {
+            UsableOnSelf = false;
+
             TobogangItemId = TobogangMod.TobogangItems.NUKE;
             CoinguesPrice = 500;
             Keywords = ["nuke"];

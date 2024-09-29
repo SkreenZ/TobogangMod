@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using GameNetcodeStuff;
 using TobogangMod.Scripts.Items;
 using Unity.Netcode;
+using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace TobogangMod.Scripts
 {
@@ -12,7 +15,7 @@ namespace TobogangMod.Scripts
         private InteractTrigger _interact = null!;
         private const float SellPercent = 0.5f;
 
-        void Awake()
+        void Start()
         {
             _interact = GetComponentInChildren<InteractTrigger>();
             _interact.onInteract.AddListener(this, GetType().GetMethod(nameof(OnInteract)));
@@ -95,6 +98,18 @@ namespace TobogangMod.Scripts
 
             var player = playerNet.GetComponent<PlayerControllerB>();
             player.ItemSlots[player.currentItemSlot].DestroyObjectInHand(player);
+
+            StartCoroutine(PlaySoundCoroutine());
+        }
+
+        private IEnumerator PlaySoundCoroutine()
+        {
+            var audio = GetComponentInChildren<AudioSource>();
+            audio.pitch = Random.Range(0.8f, 1.2f);
+            audio.PlayOneShot(TobogangMod.RecycleClip);
+
+            yield return new WaitForSeconds(TobogangMod.RecycleClip.length);
+            audio.pitch = 1f;
         }
     }
 }

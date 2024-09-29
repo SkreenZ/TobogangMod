@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace TobogangMod.Scripts.Items
 {
@@ -17,6 +18,9 @@ namespace TobogangMod.Scripts.Items
 
         protected bool IsUsingPlaceholderPrefab = true;
         protected bool UsableInShip = false;
+        protected bool UsableOnSelf = true;
+
+        private bool _selfActivated = false;
 
         void Awake()
         {
@@ -37,6 +41,17 @@ namespace TobogangMod.Scripts.Items
 
             SetScrapValue(0);
             PostAwake();
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (UsableOnSelf && Mouse.current.middleButton.wasPressedThisFrame && !_selfActivated && (UsableInShip || !StartOfRound.Instance.inShipPhase))
+            {
+                _selfActivated = true;
+                ActivateOnPlayerOrEnemyServerRpc(playerHeldBy.NetworkObject, playerHeldBy.NetworkObject);
+            }
         }
 
         protected virtual void PostAwake() {}

@@ -113,6 +113,16 @@ namespace TobogangMod.Scripts
             _alarmAudio.spatialBlend = 1f;
             _alarmAudio.minDistance = 0f;
 
+            foreach (var unlockable in TobogangMod.Unlockables.unlockables)
+            {
+                var id = StartOfRound.Instance.unlockablesList.unlockables.Count;
+                var placeable = unlockable.prefabObject.GetComponentInChildren<PlaceableShipObject>();
+                placeable.unlockableID = id;
+                placeable.placeObjectSFX = GameObject.Find("Terminal").GetComponentInChildren<Terminal>().placeableObject.placeObjectSFX;
+                StartOfRound.Instance.unlockablesList.unlockables.Add(unlockable);
+                TobogangUnlockableIds.Add(id);
+            }
+
             if (IsServer)
             {
                 if (ES3.FileExists(GameNetworkManager.Instance.currentSaveFileName))
@@ -142,16 +152,7 @@ namespace TobogangMod.Scripts
                     TobogangMod.Logger.LogDebug($"Loaded coingues from save: {_coingues}");
                 }
 
-                foreach (var unlockable in TobogangMod.Unlockables.unlockables)
-                {
-                    StartOfRound.Instance.unlockablesList.unlockables.Add(unlockable);
-                    TobogangUnlockableIds.Add(StartOfRound.Instance.unlockablesList.unlockables.Count - 1);
-                }
-
-                var trash = Instantiate(TobogangMod.TrashPrefab, StartOfRound.Instance.elevatorTransform.position, Quaternion.identity);
-                var placeable = trash.GetComponentInChildren<PlaceableShipObject>();
-                placeable.placeObjectSFX = GameObject.Find("Terminal").GetComponentInChildren<Terminal>().placeableObject.placeObjectSFX;
-                placeable.unlockableID = TobogangUnlockableIds[0];
+                var trash = Instantiate(StartOfRound.Instance.unlockablesList.unlockables[TobogangUnlockableIds[0]].prefabObject, StartOfRound.Instance.elevatorTransform.position, Quaternion.identity);
                 trash.GetComponent<NetworkObject>().Spawn();
 
                 // ShipBuildModeManager.Instance.PlaceShipObject(trash.gameObject.transform.position, trash.gameObject.transform.rotation.eulerAngles, placeable, false);
@@ -164,6 +165,11 @@ namespace TobogangMod.Scripts
 
         void Update()
         {
+            if (StartOfRound.Instance.localPlayerController == null)
+            {
+                return;
+            }
+
             UpdateSunExplosion();
 
             if (_localPlayerCoinguesDisplay == null || _localPlayerCoinguesDisplayS == null)
@@ -587,6 +593,89 @@ namespace TobogangMod.Scripts
             StartOfRound.Instance.UpdatePlayerVoiceEffects();
         }
 
+        public void ForcePlayerSprint(PlayerControllerB player)
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+
+            StartCoroutine(ForceSprintCoroutine(player));
+        }
+        private IEnumerator ForceSprintCoroutine(PlayerControllerB player)
+        {
+            if (!IsServer)
+            {
+                yield break;
+            }
+
+            PlaySoundClientRpc(player.NetworkObject, true);
+
+            yield return new WaitForSeconds(12.125f);
+
+            PlaySoundClientRpc(player.NetworkObject, false);
+            ForceSprintPlayerServerRpc(player.NetworkObject, true);
+
+            while (!StartOfRound.Instance.inShipPhase && player.isPlayerControlled && !player.isPlayerDead)
+            {
+                yield return new WaitForEndOfFrame();
+            }
+
+            ForceSprintPlayerServerRpc(player.NetworkObject, false);
+            StopSoundClientRpc(player.NetworkObject);
+        }
+
+        [ClientRpc]
+        private void PlaySoundClientRpc(NetworkObjectReference playerRef, bool isIntro)
+        {
+            if (!playerRef.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            var sound = RandomSound.Instances[playerNet.NetworkObjectId];
+            sound.AudioSource.clip = isIntro ? TobogangMod.InitialDIntro : TobogangMod.InitialDLoop;
+            sound.AudioSource.loop = !isIntro;
+            sound.AudioSource.Play();
+        }
+
+        [ClientRpc]
+        private void StopSoundClientRpc(NetworkObjectReference playerRef)
+        {
+            if (!playerRef.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            var sound = RandomSound.Instances[playerNet.NetworkObjectId];
+            sound.AudioSource.Stop(false);
+            sound.AudioSource.clip = null;
+            sound.AudioSource.loop = false;
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void ForceSprintPlayerServerRpc(NetworkObjectReference playerRef, bool active)
+        {
+            ForceSprintPlayerClientRpc(playerRef, active);
+        }
+
+        [ClientRpc]
+        public void ForceSprintPlayerClientRpc(NetworkObjectReference playerRef, bool active)
+        {
+            if (!playerRef.TryGet(out var playerNet))
+            {
+                return;
+            }
+
+            var player = playerNet.GetComponentInChildren<PlayerControllerB>();
+
+            if (player == StartOfRound.Instance.localPlayerController)
+            {
+                PlayerControllerPatch.LocalPlayerIsForcedToSprint = active;
+            }
+        }
+
+
         [ServerRpc(RequireOwnership = false)]
         public void DeafenPlayerServerRpc(NetworkObjectReference targetPlayerRef, ulong sourcePlayerRef, bool isDeaf)
         {
@@ -927,7 +1016,7 @@ namespace TobogangMod.Scripts
 
             if (isDisco)
             {
-                StartCoroutine(WaitForEndOfRoundAndStopDisco(playerNet.gameObject));
+                StartCoroutine(WaitForEndOfRoundAndStopDisco(playerNet.GetComponentInChildren<PlayerControllerB>()));
             }
         }
 
@@ -972,15 +1061,15 @@ namespace TobogangMod.Scripts
             }
         }
 
-        private IEnumerator WaitForEndOfRoundAndStopDisco(GameObject player)
+        private IEnumerator WaitForEndOfRoundAndStopDisco(PlayerControllerB player)
         {
-            while (!StartOfRound.Instance.inShipPhase)
+            while (!StartOfRound.Instance.inShipPhase && !player.isPlayerDead)
             {
-                yield return new WaitForSeconds(0.1f);
+                yield return new WaitForEndOfFrame();
             }
 
-            TobogangMod.Logger.LogDebug($"Stopping disco for {player.GetComponent<PlayerControllerB>().playerUsername}");
-            SetPlayerDiscoServerRpc(player.GetComponent<NetworkObject>(), false);
+            TobogangMod.Logger.LogDebug($"Stopping disco for {player.playerUsername}");
+            SetPlayerDiscoServerRpc(player.NetworkObject, false);
         }
 
         private IEnumerator WaitAndDestroyDisco(Transform parent)

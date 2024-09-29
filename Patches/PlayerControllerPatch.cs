@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 using GameNetcodeStuff;
 using HarmonyLib;
 using TMPro;
@@ -16,12 +18,17 @@ namespace TobogangMod.Patches
         public static readonly string MUTE_ICON = "TobogangMutedIcon";
         public static readonly string DEAF_ICON = "TobogangDeafenedIcon";
         public static GameObject? LocalPlayerCanvas { get; private set; } = null;
+        public static bool LocalPlayerIsForcedToSprint = false;
+
+        private static float _baseMovementSpeed = 0.5f;
 
         [HarmonyPatch(nameof(PlayerControllerB.Start))]
         [HarmonyPostfix]
         private static void StartPostfix(PlayerControllerB __instance)
         {
             TobogangMod.Logger.LogDebug($"Player steam id: {__instance.playerSteamId}");
+
+            _baseMovementSpeed = __instance.movementSpeed;
 
             if (LocalPlayerCanvas == null)
             {
@@ -92,6 +99,62 @@ namespace TobogangMod.Patches
 #if DEBUG
             __instance.sprintMeter = 1f;
 #endif
+
+            if (LocalPlayerIsForcedToSprint)
+            {
+                __instance.isSprinting = true;
+                __instance.playerBodyAnimator.SetBool("Sprinting", true);
+                __instance.movementSpeed = _baseMovementSpeed * 1.5f;
+            }
+            else
+            {
+                __instance.movementSpeed = _baseMovementSpeed;
+            }
+        }
+
+        public static void SetCustomMoveInputVectorMethod(PlayerControllerB player)
+        {
+            if (!LocalPlayerIsForcedToSprint)
+            {
+                return;
+            }
+
+            player.sprintMeter = 1f;
+            player.isSprinting = true;
+            player.moveInputVector.Set(player.moveInputVector.x, 1f);
+        }
+
+        [HarmonyPatch(nameof(PlayerControllerB.Update))]
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> UpdateTranspiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var moveInputVectorField = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.moveInputVector));
+            var isSprintingField = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.isSprinting));
+
+            var matcher = new CodeMatcher(instructions);
+            bool foundAny = false;
+
+            while (matcher.SearchForward(instruction =>
+                       instruction.opcode == OpCodes.Stfld &&
+                       ((FieldInfo)instruction.operand == moveInputVectorField || (FieldInfo)instruction.operand == isSprintingField)).IsValid)
+            {
+                foundAny = true;
+
+                matcher
+                    .Advance(1) // Move past the original Stfld instruction
+                    .Insert(new List<CodeInstruction>
+                    {
+                        new CodeInstruction(OpCodes.Ldarg_0), // Load 'this' (PlayerControllerB instance)
+                        new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(PlayerControllerPatch), nameof(SetCustomMoveInputVectorMethod)))
+                    });
+            }
+
+            if (!foundAny)
+            {
+                throw new Exception("Could not find any moveInputVector assignment in the Update method.");
+            }
+
+            return matcher.InstructionEnumeration();
         }
 
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer)), HarmonyPostfix]

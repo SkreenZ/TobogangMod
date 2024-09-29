@@ -15,6 +15,7 @@ using GameNetcodeStuff;
 using TobogangMod.Patches;
 using Unity.Netcode;
 using NetworkPrefabs = LethalLib.Modules.NetworkPrefabs;
+using static UnityEngine.ParticleSystem.PlaybackState;
 
 namespace TobogangMod;
 
@@ -35,6 +36,7 @@ public class TobogangMod : BaseUnityPlugin
         public static readonly string SWAP = "Swap";
         public static readonly string ANNIHILATION = "Annihilation";
         public static readonly string ARMAGEDDON = "Armageddon";
+        public static readonly string FRENESIE = "Frenesie";
     }
 
     public static readonly ulong NULL_OBJECT = ulong.MaxValue;
@@ -49,6 +51,9 @@ public class TobogangMod : BaseUnityPlugin
     public static AudioClip SunExplosionClip { get; private set; } = null!;
     public static AudioClip DistantExplosionClip { get; private set; } = null!;
     public static AudioClip ArmageddonSirenClip { get; private set; } = null!;
+    public static AudioClip InitialDIntro { get; private set; } = null!;
+    public static AudioClip InitialDLoop { get; private set; } = null!;
+    public static AudioClip RecycleClip { get; private set; } = null!;
 
     public static GameObject ConfettiPrefab { get; private set; } = null!;
     public static GameObject TobogganPrefab { get; private set; } = null!;
@@ -73,15 +78,31 @@ public class TobogangMod : BaseUnityPlugin
         MainAssetBundle = AssetBundle.LoadFromFile(Path.Combine(ASSETS_PATH, "tobogangasset"));
 
         NetworkPrefab = MainAssetBundle.LoadAsset<GameObject>("NetworkHandler");
+
         DrumRollClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/drum_roll.mp3");
+        DrumRollClip.LoadAudioData();
         PartyHornClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/party_horn.mp3");
+        PartyHornClip.LoadAudioData();
         ConfettiClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/confetti.mp3");
+        ConfettiClip.LoadAudioData();
         SuccessClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/success.mp3");
+        SuccessClip.LoadAudioData();
         NukeAlarmClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/nuke_alarm.mp3");
+        NukeAlarmClip.LoadAudioData();
         ShipTeleporterBeamClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/ship_teleporter_beam.mp3");
+        ShipTeleporterBeamClip.LoadAudioData();
         SunExplosionClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/sun_explosion.mp3");
+        SunExplosionClip.LoadAudioData();
         DistantExplosionClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/distant_explosion.mp3");
+        DistantExplosionClip.LoadAudioData();
         ArmageddonSirenClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/armageddon_siren.wav");
+        ArmageddonSirenClip.LoadAudioData();
+        InitialDIntro = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/intiald_intro.mp3");
+        InitialDIntro.LoadAudioData();
+        InitialDLoop = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/intiald_loop.wav");
+        InitialDLoop.LoadAudioData();
+        RecycleClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/recycle.wav");
+        RecycleClip.LoadAudioData();
 
         Unlockables = MainAssetBundle.LoadAsset<UnlockablesList>("Assets/CustomAssets/TobogangUnlockables.asset");
 
@@ -172,6 +193,11 @@ public class TobogangMod : BaseUnityPlugin
 
         ContentLoader.Register(new CustomItem(TobogangItems.ANNIHILATION, "Assets/CustomAssets/Items/TobogangAnnihilation.asset", item => {
             var script = item.spawnPrefab.AddComponent<TobogangAnnihilation>();
+            script.itemProperties = item;
+        }));
+
+        ContentLoader.Register(new CustomItem(TobogangItems.FRENESIE, "Assets/CustomAssets/Items/TobogangFrenesie.asset", item => {
+            var script = item.spawnPrefab.AddComponent<TobogangFrenesie>();
             script.itemProperties = item;
         }));
 

@@ -9,6 +9,8 @@ namespace TobogangMod.Scripts.Items
     {
         TobogangSwap()
         {
+            UsableOnSelf = false;
+
             TobogangItemId = TobogangMod.TobogangItems.SWAP;
             CoinguesPrice = 350;
             Keywords = ["swap"];
