@@ -96,6 +96,11 @@ namespace TobogangMod.Patches
         [HarmonyPatch(nameof(PlayerControllerB.Update)), HarmonyPostfix]
         private static void UpdatePostfix(PlayerControllerB __instance)
         {
+            if (!__instance.isPlayerControlled)
+            {
+                return;
+            }
+
 #if DEBUG
             __instance.sprintMeter = 1f;
 #endif

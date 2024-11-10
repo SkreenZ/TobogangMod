@@ -79,23 +79,23 @@ public class TobogangMod : BaseUnityPlugin
 
         NetworkPrefab = MainAssetBundle.LoadAsset<GameObject>("NetworkHandler");
 
-        DrumRollClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/drum_roll.mp3");
+        DrumRollClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/drum_roll.mp3");
         DrumRollClip.LoadAudioData();
-        PartyHornClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/party_horn.mp3");
+        PartyHornClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/party_horn.mp3");
         PartyHornClip.LoadAudioData();
-        ConfettiClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/confetti.mp3");
+        ConfettiClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/confetti.mp3");
         ConfettiClip.LoadAudioData();
-        SuccessClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/success.mp3");
+        SuccessClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/success.mp3");
         SuccessClip.LoadAudioData();
-        NukeAlarmClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/nuke_alarm.mp3");
+        NukeAlarmClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/nuke_alarm.mp3");
         NukeAlarmClip.LoadAudioData();
-        ShipTeleporterBeamClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/ship_teleporter_beam.mp3");
+        ShipTeleporterBeamClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/ship_teleporter_beam.mp3");
         ShipTeleporterBeamClip.LoadAudioData();
-        SunExplosionClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/sun_explosion.mp3");
+        SunExplosionClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/sun_explosion.mp3");
         SunExplosionClip.LoadAudioData();
-        DistantExplosionClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/distant_explosion.mp3");
+        DistantExplosionClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/distant_explosion.mp3");
         DistantExplosionClip.LoadAudioData();
-        ArmageddonSirenClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/armageddon_siren.wav");
+        ArmageddonSirenClip = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/armageddon_siren.wav");
         ArmageddonSirenClip.LoadAudioData();
         InitialDIntro = MainAssetBundle.LoadAsset<AudioClip>("Assets/CustomAssets/Audio/intiald_intro.mp3");
         InitialDIntro.LoadAudioData();
